@@ -1,4 +1,4 @@
-# Sprint Velocity — Dashboard
+# Jira Spillover Analyzer — Dashboard
 
 A **single-file, client-side** web app for analyzing Jira Excel exports, flagging **spillover** work by sprint values, tracking **bugs** (PROD / RCA), and exporting an enriched **multi-sheet workbook**—all in the browser, with **no server** and no data upload.
 
