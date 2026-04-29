@@ -1,0 +1,4152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Velocity — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d0d0d;
+            --surface: #181818;
+            --surface-2: #1c1c1c;
+            --border: #2a2a2a;
+            --border-subtle: #333;
+            --text: #ffffff;
+            --text-muted: #a0a0a0;
+            --text-dim: #6b6b6b;
+            --accent: #3b82f6;
+            --accent-soft: rgba(59, 130, 246, 0.12);
+            --warning: #eab308;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Hide scrollbars but keep scrolling (sidebar + main + lists) */
+        .sidebar__scroll,
+        .assignees-list,
+        .main {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .sidebar__scroll::-webkit-scrollbar,
+        .assignees-list::-webkit-scrollbar,
+        .main::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+        }
+
+        body {
+            font-family: var(--font);
+            color: var(--text);
+            background: var(--bg);
+            min-height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* —— Sidebar (fixed; does not scroll with page) —— */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 272px;
+            height: 100vh;
+            z-index: 100;
+            flex-shrink: 0;
+            background: #0a0a0a;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 1.1rem 0 0.85rem;
+            overflow: hidden;
+        }
+
+        .sidebar__scroll {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 0 0.65rem;
+        }
+
+        .sidebar__divider {
+            height: 1px;
+            margin: 0.65rem 0.5rem;
+            background: var(--border);
+            opacity: 0.85;
+        }
+
+        .sidebar__subpanel {
+            margin-top: 0.2rem;
+            padding-left: 0.25rem;
+            animation: sidebarFold 0.18s ease-out;
+        }
+
+        @keyframes sidebarFold {
+            from { opacity: 0.85; }
+            to { opacity: 1; }
+        }
+
+        .assignees-list {
+            max-height: min(42vh, 320px);
+            overflow-y: auto;
+            padding: 0.35rem 0.4rem 0.6rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+        .assignees-empty {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            padding: 0.65rem 0.5rem;
+            line-height: 1.4;
+        }
+
+        .assignee-issue {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.65rem;
+            padding: 0.35rem 0.45rem;
+            border-radius: 6px;
+            font-size: 0.76rem;
+            color: var(--text);
+            cursor: default;
+            min-width: 0;
+        }
+
+        .assignee-issue:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .assignee-issue__name {
+            font-weight: 500;
+            color: var(--text-muted);
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .assignee-issue__key {
+            font-family: ui-monospace, monospace;
+            font-size: 0.72rem;
+            letter-spacing: 0.02em;
+            color: var(--text);
+            flex-shrink: 0;
+        }
+
+        .sidebar__brand {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0 1rem 1rem;
+            margin: 0 0.65rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar__brand-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sidebar__brand-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .sidebar__brand-toggle:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-muted);
+        }
+
+        .sidebar__logo {
+            width: 34px;
+            height: 34px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(145deg, #2d2d2d, #141414);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #fff;
+        }
+
+        .sidebar__title {
+            font-weight: 600;
+            font-size: 0.98rem;
+            letter-spacing: -0.02em;
+        }
+
+        .sidebar__title span { color: var(--text-muted); font-weight: 500; }
+
+        .sidebar__label {
+            font-size: 0.62rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            padding: 0.85rem 0.6rem 0.45rem;
+        }
+
+        .sidebar__label:first-of-type {
+            padding-top: 0.15rem;
+        }
+
+        .sidebar__nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .sidebar__link {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.48rem 0.65rem;
+            border-radius: 10px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .sidebar__link svg {
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            opacity: 0.88;
+        }
+
+        .sidebar__link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+
+        .sidebar__link--active {
+            background: #1f1f1f;
+            color: var(--text);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+        }
+
+        .sidebar__link--active svg {
+            opacity: 1;
+            color: var(--text);
+        }
+
+        .sidebar__link--spread {
+            justify-content: space-between;
+        }
+
+        .sidebar__kbd {
+            font-family: var(--font);
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+        }
+
+        .sidebar__folder {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0.48rem 0.65rem;
+            margin: 0;
+            border: none;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .sidebar__folder:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+
+        .sidebar__folder-inner {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            min-width: 0;
+        }
+
+        .sidebar__folder-inner svg:first-child {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            opacity: 0.88;
+        }
+
+        .sidebar__chevron {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            opacity: 0.55;
+            transition: transform 0.2s ease, opacity 0.15s;
+        }
+
+        .sidebar__folder--open .sidebar__chevron {
+            transform: rotate(90deg);
+            opacity: 0.85;
+        }
+
+        .sidebar__footer {
+            margin-top: auto;
+            padding: 0.75rem 1rem 0;
+        }
+
+        .sidebar__cta {
+            padding: 1rem;
+            border-radius: var(--radius);
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.45;
+        }
+
+        .sidebar__link-main {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        /* —— Main: only this column scrolls —— */
+        .main {
+            flex: 1;
+            min-width: 0;
+            margin-left: 272px;
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .dashboard-phase[hidden],
+        .spillover-dashboard-phase[hidden],
+        .bug-dashboard-phase[hidden],
+        .reports-phase[hidden],
+        .analytics-phase[hidden],
+        .exports-phase[hidden],
+        .ticket-detail-phase[hidden] {
+            display: none !important;
+        }
+
+        .ticket-detail-section {
+            margin-top: 0.5rem;
+        }
+
+        .ticket-detail-table-wrap {
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            overflow: hidden;
+        }
+
+        .ticket-detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .ticket-detail-table th {
+            text-align: left;
+            width: 34%;
+            max-width: 14rem;
+            padding: 0.65rem 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            background: rgba(0, 0, 0, 0.25);
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .ticket-detail-table td {
+            padding: 0.65rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            word-break: break-word;
+            line-height: 1.45;
+        }
+
+        .ticket-detail-table tr:last-child th,
+        .ticket-detail-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .assignee-issue--clickable {
+            cursor: pointer;
+            transition: background 0.12s;
+        }
+
+        .assignee-issue--clickable:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: -2px;
+        }
+
+        .spillover-summary {
+            margin-bottom: 1.5rem;
+        }
+
+        .spillover-summary__heading,
+        .spillover-detail__heading {
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.11em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin: 0 0 0.65rem;
+        }
+
+        .spillover-detail__heading {
+            margin-top: 1.35rem;
+            margin-bottom: 0.65rem;
+        }
+
+        .spillover-table__count {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+            color: var(--warning);
+        }
+
+        .spillover-table--summary tbody tr {
+            cursor: default;
+        }
+
+        .spillover-table--summary tbody tr:hover {
+            background: transparent;
+        }
+
+        .spillover-table__reason-cell {
+            min-width: 12rem;
+            max-width: 28rem;
+            vertical-align: middle;
+        }
+
+        .spillover-reason-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.45rem 0.55rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.35);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.8125rem;
+            line-height: 1.35;
+        }
+
+        .spillover-reason-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .spillover-reason-input:focus {
+            outline: none;
+            border-color: rgba(234, 179, 8, 0.55);
+            box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.12);
+        }
+
+        .spillover-table__category-cell {
+            min-width: 11rem;
+            max-width: 18rem;
+            vertical-align: middle;
+        }
+
+        .spillover-category-select,
+        .bug-prod-select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.45rem 2rem 0.45rem 0.55rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.35);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.8125rem;
+            line-height: 1.35;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+        }
+
+        .spillover-category-select:focus,
+        .bug-prod-select:focus {
+            outline: none;
+            border-color: rgba(234, 179, 8, 0.55);
+            box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.12);
+        }
+
+        .spillover-table__rca-cell {
+            min-width: 12rem;
+            max-width: 28rem;
+            vertical-align: middle;
+        }
+
+        .spillover-dash-section {
+            margin-bottom: 1.25rem;
+        }
+
+        .spillover-table-wrap {
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .spillover-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .spillover-table th,
+        .spillover-table td {
+            padding: 0.65rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .spillover-table th {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+        .spillover-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .spillover-table__row {
+            cursor: pointer;
+            transition: background 0.12s;
+        }
+
+        .spillover-table__row:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .spillover-table__row:focus-visible {
+            outline: 2px solid var(--warning);
+            outline-offset: -2px;
+        }
+
+        .spillover-table__name {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .spillover-table__key-cell {
+            font-family: ui-monospace, monospace;
+        }
+
+        .spillover-table__tick {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.35rem;
+            height: 1.35rem;
+            margin-right: 0.5rem;
+            border-radius: 6px;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.35);
+            color: #86efac;
+            font-size: 0.65rem;
+            vertical-align: middle;
+        }
+
+        .spillover-table__key {
+            display: inline-block;
+            vertical-align: middle;
+            letter-spacing: 0.02em;
+            color: var(--text);
+        }
+
+        .spillover-dash-placeholder {
+            margin: 0;
+        }
+
+        .panel-dark__head--stack {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .panel-dark__sub {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin: 0.4rem 0 0;
+            line-height: 1.4;
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: 0.01em;
+        }
+
+        .setup-phase__title {
+            font-size: clamp(1.35rem, 3vw, 1.65rem);
+        }
+
+        .setup-phase__sub {
+            max-width: 48ch;
+        }
+
+        .main__inner {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1.5rem 1.75rem 2.5rem;
+        }
+
+        .page-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .page-head__actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .breadcrumb {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.35rem;
+            letter-spacing: 0.02em;
+        }
+
+        .breadcrumb-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+
+        .breadcrumb-link:hover {
+            color: var(--accent);
+        }
+
+        .breadcrumb-sep {
+            color: var(--text-dim);
+        }
+
+        .page-head__title {
+            font-size: clamp(1.5rem, 3vw, 1.85rem);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.25rem;
+        }
+
+        .page-head__sub {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            max-width: 42ch;
+            line-height: 1.5;
+        }
+
+        .btn-export {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.55rem 1rem;
+            font-family: inherit;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--text);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .btn-export:hover {
+            background: var(--surface-2);
+            border-color: var(--border-subtle);
+        }
+
+        .btn-export svg {
+            width: 16px;
+            height: 16px;
+            opacity: 0.85;
+        }
+
+        .message {
+            display: none;
+            margin-bottom: 1rem;
+            padding: 0.85rem 1rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.8125rem;
+            line-height: 1.45;
+            border: 1px solid var(--border);
+        }
+
+        .message.show { display: block; }
+
+        .message.success {
+            background: rgba(34, 197, 94, 0.08);
+            border-color: rgba(34, 197, 94, 0.25);
+            color: #86efac;
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.08);
+            border-color: rgba(239, 68, 68, 0.25);
+            color: #fca5a5;
+        }
+
+        /* Metric row */
+        .dash-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        @media (max-width: 1100px) {
+            .dash-metrics { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 540px) {
+            .dash-metrics { grid-template-columns: 1fr; }
+        }
+
+        .dash-metric {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.15rem 1.25rem;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            transition: border-color 0.15s;
+        }
+
+        .dash-metric:hover {
+            border-color: var(--border-subtle);
+        }
+
+        .dash-metric__label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-bottom: 0.35rem;
+        }
+
+        .dash-metric__value {
+            font-size: 1.65rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+        }
+
+        .dash-metric__icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .dash-metric__icon svg {
+            width: 20px;
+            height: 20px;
+            color: var(--text-muted);
+        }
+
+        /* Middle row: chart + breakdown */
+        .dash-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            align-items: stretch;
+        }
+
+        @media (max-width: 960px) {
+            .dash-row { grid-template-columns: 1fr; }
+        }
+
+        .panel-dark {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .panel-dark__head {
+            padding: 1rem 1.15rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .panel-dark__head h2 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .panel-dark__body {
+            padding: 1rem 1.15rem 1.15rem;
+        }
+
+        .chart-panel .panel-dark__body {
+            min-height: 220px;
+            padding: 0 1rem 1rem;
+        }
+
+        .chart-svg {
+            width: 100%;
+            height: 200px;
+            display: block;
+        }
+
+        .chart-note {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            padding: 0.75rem 1.15rem 0;
+        }
+
+        /* Data section */
+        .data-section__title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.85rem;
+        }
+
+        .upload-dark {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem 1.25rem;
+            margin-bottom: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .upload-dark:hover {
+            border-color: var(--border-subtle);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        @media (min-width: 768px) {
+            .upload-dark {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1.5rem;
+                text-align: left;
+            }
+            .upload-dark .upload-lead { flex: 1; }
+            .upload-dark .upload-actions { flex-shrink: 0; }
+        }
+
+        .upload-dark input[type="file"] { display: none; }
+
+        .upload-icon {
+            width: 44px;
+            height: 44px;
+            margin: 0 auto 0.75rem;
+            color: var(--accent);
+        }
+
+        @media (min-width: 768px) {
+            .upload-icon { margin: 0 0 0.5rem 0; }
+        }
+
+        .upload-text {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .kbd {
+            font-size: 0.85em;
+            font-family: ui-monospace, monospace;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 0.15em 0.45em;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .btn-upload {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.6rem 1.2rem;
+            font-family: inherit;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #fff;
+            background: var(--accent);
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+
+        .btn-upload:hover { opacity: 0.92; }
+        .btn-upload:active { transform: scale(0.98); }
+
+        .panel {
+            display: none;
+            padding: 1.25rem;
+            border-radius: var(--radius);
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+
+        .panel.show {
+            display: block;
+            animation: fadeUp 0.35s ease;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .file-chip {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.65rem 0.85rem;
+            margin-bottom: 1.15rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+        }
+
+        .file-chip svg { flex-shrink: 0; color: var(--accent); }
+        .file-chip strong { color: var(--text); }
+
+        .section-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 0.85rem;
+        }
+
+        .field { margin-bottom: 1rem; }
+
+        .field label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.35rem;
+        }
+
+        .field-hint {
+            font-weight: 400;
+            color: var(--text-dim);
+            font-size: 0.72rem;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 0.55rem 0.75rem;
+            font-size: 0.875rem;
+            font-family: inherit;
+            color: var(--text);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+        }
+
+        .field input::placeholder { color: var(--text-dim); }
+
+        .field input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-soft);
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-top: 1.1rem;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 96px;
+            padding: 0.55rem 0.85rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            font-family: inherit;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .btn-primary {
+            color: #fff;
+            background: var(--accent);
+            border-color: transparent;
+        }
+
+        .btn-primary:hover { filter: brightness(1.08); }
+
+        .btn-download {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--border);
+        }
+
+        .btn-download:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary {
+            color: var(--text-muted);
+            background: transparent;
+            border-color: var(--border);
+        }
+
+        .btn-secondary:hover {
+            color: var(--text);
+            border-color: var(--border-subtle);
+        }
+
+        .preview-box {
+            font-size: 0.8125rem;
+            line-height: 1.5;
+            color: var(--text-muted);
+        }
+
+        .preview-box--empty {
+            text-align: center;
+            padding: 1.5rem 1rem;
+            color: var(--text-dim);
+        }
+
+        .preview-box--dashboard {
+            padding: 0;
+        }
+
+        .preview-hint {
+            margin: 0;
+            font-size: 0.8125rem;
+        }
+
+        .preview-hint strong { color: var(--accent); font-weight: 600; }
+
+        .metric-section { margin-bottom: 1.15rem; }
+
+        .metric-section:last-child { margin-bottom: 0; }
+
+        .metric-section__title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 0.65rem;
+        }
+
+        .metric-banner {
+            padding: 0.85rem 1rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.78rem;
+            line-height: 1.45;
+            border: 1px solid var(--border);
+            background: rgba(234, 179, 8, 0.06);
+            color: var(--text-muted);
+        }
+
+        .metric-banner strong { color: var(--warning); }
+
+        .issue-type-table-wrap {
+            overflow-x: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        .issue-type-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8125rem;
+        }
+
+        .issue-type-table th,
+        .issue-type-table td {
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .issue-type-table th {
+            font-weight: 600;
+            font-size: 0.65rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .issue-type-table th:last-child,
+        .issue-type-table td:last-child {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .issue-type-table tbody tr:last-child td { border-bottom: none; }
+
+        .issue-type-table__num {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .issue-type-table tr.issue-type-table__sub td {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+        }
+
+        .page-foot {
+            margin-top: 2rem;
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            text-align: center;
+            letter-spacing: 0.03em;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                overflow: auto;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            body::-webkit-scrollbar {
+                width: 0;
+                height: 0;
+            }
+            .app {
+                flex-direction: column;
+            }
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+                max-height: none;
+                overflow: visible;
+            }
+            .sidebar__scroll {
+                overflow: visible;
+            }
+            .assignees-list {
+                max-height: 200px;
+            }
+            .main {
+                margin-left: 0;
+                height: auto;
+                min-height: 60vh;
+                overflow: visible;
+            }
+        }
+
+        .global-search-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 10vh 1rem 2rem;
+            box-sizing: border-box;
+        }
+
+        .global-search-overlay[hidden] {
+            display: none !important;
+        }
+
+        .global-search-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(2px);
+        }
+
+        .global-search-panel {
+            position: relative;
+            width: 100%;
+            max-width: 32rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+            overflow: hidden;
+        }
+
+        .global-search-panel__head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65rem 0.85rem;
+            border-bottom: 1px solid var(--border);
+            gap: 0.5rem;
+        }
+
+        .global-search-panel__title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .global-search-panel__close {
+            flex-shrink: 0;
+            width: 2rem;
+            height: 2rem;
+            margin: 0;
+            padding: 0;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 1.35rem;
+            line-height: 1;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .global-search-panel__close:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+        }
+
+        .global-search-input {
+            width: 100%;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0.65rem 0.85rem;
+            border: none;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.25);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .global-search-input:focus {
+            outline: none;
+            box-shadow: inset 0 0 0 1px rgba(234, 179, 8, 0.25);
+        }
+
+        .global-search-results {
+            list-style: none;
+            margin: 0;
+            padding: 0.35rem 0;
+            max-height: min(50vh, 320px);
+            overflow-y: auto;
+        }
+
+        .global-search__empty {
+            padding: 0.85rem 1rem;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+        }
+
+        .global-search__hit {
+            width: 100%;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.15rem 0.75rem;
+            align-items: baseline;
+            padding: 0.55rem 0.85rem;
+            border: none;
+            background: transparent;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.8125rem;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .global-search__hit:hover,
+        .global-search__hit:focus-visible {
+            background: rgba(255, 255, 255, 0.06);
+            outline: none;
+        }
+
+        .global-search__key {
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .global-search__meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            justify-self: end;
+        }
+
+        .global-search__sum {
+            grid-column: 1 / -1;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            line-height: 1.35;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .secondary-dashboard .panel-dark {
+            margin-bottom: 1.25rem;
+        }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .report-table th,
+        .report-table td {
+            padding: 0.6rem 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .report-table th {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+        }
+
+        .report-kv {
+            display: grid;
+            grid-template-columns: 9rem 1fr;
+            gap: 0.5rem 1.25rem;
+            font-size: 0.875rem;
+        }
+
+        .report-kv dt {
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .report-kv dd {
+            margin: 0;
+            color: var(--text);
+        }
+
+        .ana-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .ana-bar-line {
+            display: grid;
+            grid-template-columns: 5.5rem 1fr 2.5rem;
+            gap: 0.5rem 0.75rem;
+            align-items: center;
+            font-size: 0.8125rem;
+        }
+
+        .ana-bar-line__label {
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ana-bar-line__track {
+            height: 0.5rem;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .ana-bar-line__fill {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            min-width: 0;
+        }
+
+        .ana-bar-line__fill--yes {
+            background: linear-gradient(90deg, #b45309, #f59e0b);
+        }
+
+        .ana-bar-line__fill--no {
+            background: linear-gradient(90deg, #4b5563, #9ca3af);
+        }
+
+        .ana-bar-line__num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-dim);
+        }
+
+        .ana-donut-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .report-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .report-stat-card {
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.22);
+            padding: 0.85rem 1rem;
+        }
+
+        .report-stat-card__label {
+            font-size: 0.62rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.35rem;
+        }
+
+        .report-stat-card__value {
+            font-size: 1.35rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--text);
+            line-height: 1.2;
+        }
+
+        .report-stat-card__sub {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+
+        .report-mini-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8125rem;
+        }
+
+        .report-mini-table th,
+        .report-mini-table td {
+            padding: 0.45rem 0.5rem;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .report-mini-table th {
+            width: 42%;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .report-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.72rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.25);
+            color: var(--text-muted);
+        }
+
+        .report-pill--ok {
+            border-color: rgba(34, 197, 94, 0.35);
+            color: #86efac;
+        }
+
+        .report-pill--warn {
+            border-color: rgba(234, 179, 8, 0.4);
+            color: #fcd34d;
+        }
+
+        .export-sheet-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .export-sheet-card {
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.22);
+            overflow: hidden;
+        }
+
+        .export-sheet-card__head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.5rem 1rem;
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.15);
+        }
+
+        .export-sheet-card__title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .export-sheet-card__meta {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .export-sheet-card__cols {
+            padding: 0.75rem 1rem 1rem;
+            max-height: 220px;
+            overflow-y: auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            align-content: flex-start;
+            margin-bottom: 0;
+        }
+
+        .col-chip {
+            display: inline-block;
+            padding: 0.22rem 0.45rem;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-muted);
+            max-width: 100%;
+            word-break: break-word;
+        }
+
+        .col-chip--new {
+            border-color: rgba(234, 179, 8, 0.45);
+            background: rgba(234, 179, 8, 0.08);
+            color: #fcd34d;
+        }
+
+        .export-preview-wrap {
+            border-top: 1px solid var(--border);
+            padding: 0.75rem 1rem 1rem;
+        }
+
+        .export-preview-caption {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin: 0 0 0.5rem;
+        }
+
+        .export-preview-scroll {
+            max-width: 100%;
+            overflow: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        .export-preview-table {
+            width: max-content;
+            min-width: 100%;
+            border-collapse: collapse;
+            font-size: 0.7rem;
+        }
+
+        .export-preview-table th,
+        .export-preview-table td {
+            padding: 0.35rem 0.5rem;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid rgba(255, 255, 255, 0.04);
+            white-space: nowrap;
+            max-width: 14rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: top;
+        }
+
+        .export-preview-table th {
+            position: sticky;
+            top: 0;
+            background: rgba(30, 30, 30, 0.95);
+            color: var(--text-muted);
+            font-weight: 600;
+            z-index: 1;
+        }
+
+        .export-preview-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .export-preview-empty {
+            color: var(--text-muted);
+            font-style: italic;
+            white-space: normal;
+        }
+
+        .export-hero-filename {
+            font-size: 0.875rem;
+            margin-top: 0.75rem;
+        }
+
+        .export-hero-filename code {
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <aside class="sidebar" aria-label="Primary navigation">
+            <div class="sidebar__brand">
+                <div class="sidebar__logo" aria-hidden="true">V</div>
+                <div class="sidebar__brand-text">
+                    <span class="sidebar__title">Sprint<span>Velocity</span></span>
+                </div>
+                <button type="button" class="sidebar__brand-toggle" aria-label="Workspace menu" title="Workspace">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+            </div>
+            <div class="sidebar__scroll">
+                <div class="sidebar__label">Shortcuts</div>
+                <nav class="sidebar__nav" aria-label="Shortcuts">
+                    <a id="navSearch" class="sidebar__link sidebar__link--spread" href="#" onclick="openGlobalSearch(event)">
+                        <span class="sidebar__link-main">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            Search
+                        </span>
+                        <kbd class="sidebar__kbd">/</kbd>
+                    </a>
+                    <a id="navReports" class="sidebar__link" href="#" onclick="navGoReports(event)">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        Reports
+                    </a>
+                </nav>
+
+                <div class="sidebar__divider" role="presentation"></div>
+
+                <div class="sidebar__label">Workspace</div>
+                <nav class="sidebar__nav" aria-label="Workspace">
+                    <a id="navUpload" class="sidebar__link sidebar__link--active" href="#" onclick="navGoSetup(event)">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        Upload &amp; configure
+                    </a>
+                    <a id="navDashboard" class="sidebar__link" href="#" onclick="navGoDashboard(event)">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                        Dashboard
+                    </a>
+                    <a id="navSpillover" class="sidebar__link" href="#" onclick="navGoSpilloverSection(event)">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                        Spillover
+                    </a>
+                    <a id="navBug" class="sidebar__link" href="#" onclick="navGoBugSection(event)">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        Bugs
+                    </a>
+                    <a id="navAnalytics" class="sidebar__link" href="#" onclick="navGoAnalytics(event)">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        Analytics
+                    </a>
+                    <a id="navExport" class="sidebar__link" href="#" onclick="navExportExcel(event)">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        Exports
+                    </a>
+                </nav>
+
+                <div class="sidebar__divider" role="presentation"></div>
+
+                <div class="sidebar__label">People</div>
+                <button type="button" id="assigneesToggle" class="sidebar__folder" aria-expanded="false" aria-controls="assigneesPanel">
+                    <span class="sidebar__folder-inner">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                        Assignees
+                    </span>
+                    <svg class="sidebar__chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
+                <div id="assigneesPanel" class="sidebar__subpanel" hidden>
+                    <div id="assigneesList" class="assignees-list">
+                        <p class="assignees-empty">Run <strong>Proceed</strong>, then click <strong>Assignees</strong> to see each assignee and issue key.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar__footer">
+                <div class="sidebar__cta">
+                    Processing stays in your browser — data never leaves this device.
+                </div>
+            </div>
+        </aside>
+
+        <main class="main">
+            <div class="main__inner">
+                <div class="message success" id="statusMsg"><p id="statusText"></p></div>
+                <div class="message error" id="errorMsg"><p id="errorText"></p></div>
+
+                <!-- Step 1: upload + parameters only -->
+                <div id="setupPhase" class="setup-phase">
+                    <header class="page-head">
+                        <div>
+                            <p class="breadcrumb">Setup</p>
+                            <h1 class="page-head__title setup-phase__title">Upload &amp; configure</h1>
+                            <p class="page-head__sub setup-phase__sub">Choose your Jira export, enter base version and sprint threshold, then run Proceed to open the dashboard.</p>
+                        </div>
+                    </header>
+
+                    <section class="data-section">
+                        <h3 class="data-section__title">Data source &amp; configuration</h3>
+                        <div class="upload-dark">
+                            <input type="file" id="fileInput" accept=".xlsx,.xls" />
+                            <div class="upload-lead">
+                                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                    <path d="M12 16V4m0 0l4 4m-4-4L8 8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke-linecap="round"/>
+                                </svg>
+                                <p class="upload-text">Accepts <strong style="color:var(--text)">.xlsx</strong> / <strong style="color:var(--text)">.xls</strong> — example <code class="kbd">jira_14.0.xlsx</code></p>
+                            </div>
+                            <div class="upload-actions">
+                                <button type="button" class="btn-upload" onclick="document.getElementById('fileInput').click()">Choose file</button>
+                            </div>
+                        </div>
+
+                        <div class="panel" id="fileDetails">
+                            <div class="file-chip">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                                </svg>
+                                <span><strong>Loaded</strong> · <span id="fileName"></span></span>
+                            </div>
+                            <p class="section-label">Parameters</p>
+                            <div class="field">
+                                <label for="baseVersion">Base version</label>
+                                <input type="text" id="baseVersion" placeholder="e.g. 14.0" autocomplete="off" />
+                            </div>
+                            <div class="field">
+                                <label for="compareThreshold">Sprint threshold <span class="field-hint">(SpillOver Yes when any sprint value equals this number)</span></label>
+                                <input type="text" id="compareThreshold" placeholder="e.g. 14.0" inputmode="decimal" autocomplete="off" />
+                            </div>
+                            <div class="button-group">
+                                <button type="button" class="btn btn-primary" onclick="runProceed()">Proceed</button>
+                                <button type="button" class="btn btn-download" onclick="processExcel()">Download</button>
+                                <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <p class="page-foot">Runs entirely in your browser · No server upload</p>
+                </div>
+
+                <!-- Step 2: full dashboard (shown after Proceed) -->
+                <div id="dashboardPhase" class="dashboard-phase" hidden>
+                    <header class="page-head">
+                        <div>
+                            <p class="breadcrumb">Dashboard</p>
+                            <h1 class="page-head__title">Welcome back</h1>
+                            <p class="page-head__sub">Spillover metrics, chart, and issue breakdown from your latest run.</p>
+                        </div>
+                        <button type="button" class="btn-export" onclick="processExcel()" title="Export enriched Excel">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            Export
+                        </button>
+                    </header>
+
+                    <section class="dash-metrics" aria-label="Summary metrics">
+                        <article class="dash-metric">
+                            <div>
+                                <p class="dash-metric__label">SpillOver Yes</p>
+                                <p class="dash-metric__value" id="dashMetricYes">—</p>
+                            </div>
+                            <div class="dash-metric__icon" aria-hidden="true">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                            </div>
+                        </article>
+                        <article class="dash-metric">
+                            <div>
+                                <p class="dash-metric__label">SpillOver No</p>
+                                <p class="dash-metric__value" id="dashMetricNo">—</p>
+                            </div>
+                            <div class="dash-metric__icon" aria-hidden="true">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                        </article>
+                        <article class="dash-metric">
+                            <div>
+                                <p class="dash-metric__label">Total rows</p>
+                                <p class="dash-metric__value" id="dashMetricTotal">—</p>
+                            </div>
+                            <div class="dash-metric__icon" aria-hidden="true">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                            </div>
+                        </article>
+                        <article class="dash-metric">
+                            <div>
+                                <p class="dash-metric__label">Bugs</p>
+                                <p class="dash-metric__value" id="dashMetricBugs">—</p>
+                            </div>
+                            <div class="dash-metric__icon" aria-hidden="true">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            </div>
+                        </article>
+                    </section>
+
+                    <div class="dash-row">
+                        <div class="panel-dark chart-panel">
+                            <div class="panel-dark__head">
+                                <h2>Analysis overview</h2>
+                            </div>
+                            <p class="chart-note" id="chartNote">Visual snapshot · Run <strong style="color:var(--text-muted)">Proceed</strong> to chart spillover across rows.</p>
+                            <div class="panel-dark__body" id="chartPanelBody">
+                                <svg class="chart-svg" id="analysisChartSvg" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+                            </div>
+                        </div>
+                        <div class="panel-dark">
+                            <div class="panel-dark__head">
+                                <h2>Issue breakdown</h2>
+                            </div>
+                            <div class="panel-dark__body">
+                                <div id="previewCount" class="preview-box preview-box--empty">
+                                    <p class="preview-hint">Issue type table appears here after analysis.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="page-foot">Runs entirely in your browser · No server upload</p>
+                </div>
+
+                <!-- Spillover-only dashboard (ticket chips; separate from main dashboard) -->
+                <div id="spilloverPhase" class="spillover-dashboard-phase" hidden>
+                    <header class="page-head">
+                        <div>
+                            <p class="breadcrumb">
+                                <a href="#" class="breadcrumb-link" onclick="navGoDashboard(event)">Dashboard</a>
+                                <span class="breadcrumb-sep"> · </span>
+                                <span>Spillover</span>
+                            </p>
+                            <h1 class="page-head__title">Spillover tickets</h1>
+                            <p class="page-head__sub">Issue keys where any sprint value equals your threshold (e.g. 14.1 vs 14.2 is No). Add a spillover reason per row if you want it in the export; click assignee or issue key (not the reason field) to view full row details.</p>
+                        </div>
+                        <div class="page-head__actions">
+                            <button type="button" class="btn btn-secondary" onclick="navGoDashboard(event)">Main dashboard</button>
+                            <button type="button" class="btn-export" onclick="processExcel()" title="Export enriched Excel">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Export
+                            </button>
+                        </div>
+                    </header>
+
+                    <section class="spillover-dash-section" aria-labelledby="spilloverDashHeading">
+                        <div class="panel-dark">
+                            <div class="panel-dark__head panel-dark__head--stack">
+                                <div>
+                                    <h2 id="spilloverDashHeading">Tickets</h2>
+                                    <p class="panel-dark__sub">Enter a spillover reason per ticket if needed; values are included when you Export. Tap assignee or issue key to open full row details.</p>
+                                </div>
+                            </div>
+                            <div class="panel-dark__body">
+                                <div id="spilloverDashboardList">
+                                    <p class="preview-hint spillover-dash-placeholder">Run <strong>Proceed</strong> on Upload &amp; configure to populate this list.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <p class="page-foot">Runs entirely in your browser · No server upload</p>
+                </div>
+
+                <!-- Bug tracking: PROD + RCA per bug row (exported on Bug sheet) -->
+                <div id="bugPhase" class="bug-dashboard-phase spillover-dashboard-phase" hidden>
+                    <header class="page-head">
+                        <div>
+                            <p class="breadcrumb">
+                                <a href="#" class="breadcrumb-link" onclick="navGoDashboard(event)">Dashboard</a>
+                                <span class="breadcrumb-sep"> · </span>
+                                <span>Bugs</span>
+                            </p>
+                            <h1 class="page-head__title">Bug tracking</h1>
+                            <p class="page-head__sub">Set <strong>PROD</strong> (Yes/No) and <strong>RCA</strong> (Root Cause Analysis) per bug. Values are included on the Bug sheet when you Export.</p>
+                        </div>
+                        <div class="page-head__actions">
+                            <button type="button" class="btn btn-secondary" onclick="navGoDashboard(event)">Main dashboard</button>
+                            <button type="button" class="btn-export" onclick="processExcel()" title="Export enriched Excel">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Export
+                            </button>
+                        </div>
+                    </header>
+
+                    <section class="spillover-dash-section" aria-labelledby="bugDashHeading">
+                        <div class="panel-dark">
+                            <div class="panel-dark__head panel-dark__head--stack">
+                                <div>
+                                    <h2 id="bugDashHeading">Bugs</h2>
+                                    <p class="panel-dark__sub">Rows are Issue Type = Bug from your sheet. PROD and RCA export as the last two columns on the Bug sheet.</p>
+                                </div>
+                            </div>
+                            <div class="panel-dark__body">
+                                <div id="bugDashboardList">
+                                    <p class="preview-hint spillover-dash-placeholder">Run <strong>Proceed</strong> on Upload &amp; configure to populate this list.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <p class="page-foot">Runs entirely in your browser · No server upload</p>
+                </div>
+
+                <!-- Reports: export-oriented summary -->
+                <div id="reportsPhase" class="reports-phase secondary-dashboard dashboard-phase" hidden>
+                    <header class="page-head">
+                        <div>
+                            <p class="breadcrumb">
+                                <a href="#" class="breadcrumb-link" onclick="navGoDashboard(event)">Dashboard</a>
+                                <span class="breadcrumb-sep"> · </span>
+                                <span>Reports</span>
+                            </p>
+                            <h1 class="page-head__title">Sprint &amp; export report</h1>
+                            <p class="page-head__sub">Snapshot of your latest analysis: volumes, column detection, export readiness, and enrichment progress.</p>
+                        </div>
+                        <div class="page-head__actions">
+                            <button type="button" class="btn btn-secondary" onclick="navGoDashboard(event)">Main dashboard</button>
+                            <button type="button" class="btn-export" onclick="processExcel()" title="Export enriched Excel">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Export
+                            </button>
+                        </div>
+                    </header>
+                    <div id="reportsDashboardBody" class="dash-row"></div>
+                    <p class="page-foot">Runs entirely in your browser · No server upload</p>
+                </div>
+
+                <!-- Analytics: charts & distribution -->
+                <div id="analyticsPhase" class="analytics-phase secondary-dashboard dashboard-phase" hidden>
+                    <header class="page-head">
+                        <div>
+                            <p class="breadcrumb">
+                                <a href="#" class="breadcrumb-link" onclick="navGoDashboard(event)">Dashboard</a>
+                                <span class="breadcrumb-sep"> · </span>
+                                <span>Analytics</span>
+                            </p>
+                            <h1 class="page-head__title">Sprint analytics</h1>
+                            <p class="page-head__sub">Spillover split, issue mix, and workload by assignee from your latest run.</p>
+                        </div>
+                        <div class="page-head__actions">
+                            <button type="button" class="btn btn-secondary" onclick="navGoDashboard(event)">Main dashboard</button>
+                            <button type="button" class="btn-export" onclick="processExcel()" title="Export enriched Excel">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Export
+                            </button>
+                        </div>
+                    </header>
+                    <div id="analyticsDashboardBody" class="dash-row"></div>
+                    <p class="page-foot">Runs entirely in your browser · No server upload</p>
+                </div>
+
+                <!-- Export preview: exact sheets & columns written to Excel -->
+                <div id="exportsPhase" class="exports-phase secondary-dashboard dashboard-phase" hidden>
+                    <header class="page-head">
+                        <div>
+                            <p class="breadcrumb">
+                                <a href="#" class="breadcrumb-link" onclick="navGoDashboard(event)">Dashboard</a>
+                                <span class="breadcrumb-sep"> · </span>
+                                <span>Exports</span>
+                            </p>
+                            <h1 class="page-head__title">Export preview</h1>
+                            <p class="page-head__sub">Exact workbook layout: sheet names, row counts, columns (amber = app-added), and scrollable table previews. PROD/RCA appear only on the Bug sheet.</p>
+                        </div>
+                        <div class="page-head__actions">
+                            <button type="button" class="btn btn-secondary" onclick="navGoDashboard(event)">Main dashboard</button>
+                            <button type="button" class="btn btn-primary" onclick="processExcel()" title="Download Excel now">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Download Excel
+                            </button>
+                        </div>
+                    </header>
+                    <div id="exportPreviewBody"></div>
+                    <p class="page-foot">Runs entirely in your browser · No server upload</p>
+                </div>
+
+                <!-- Ticket detail: one row from Excel (opened from Assignees list) -->
+                <div id="ticketDetailPhase" class="ticket-detail-phase" hidden>
+                    <header class="page-head">
+                        <div>
+                            <p class="breadcrumb">
+                                <a href="#" class="breadcrumb-link" onclick="navGoDashboard(event)">Dashboard</a>
+                                <span class="breadcrumb-sep"> · </span>
+                                <span>Ticket</span>
+                            </p>
+                            <h1 id="ticketDetailTitle" class="page-head__title">—</h1>
+                            <p class="page-head__sub">Fields below come only from your uploaded spreadsheet row for this issue.</p>
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="navGoDashboard(event)">Back to dashboard</button>
+                    </header>
+                    <section class="ticket-detail-section" aria-label="Issue fields from Excel">
+                        <div id="ticketDetailTableWrap" class="ticket-detail-table-wrap"></div>
+                    </section>
+                    <p class="page-foot">Runs entirely in your browser · No server upload</p>
+                </div>
+            </div>
+        </main>
+
+        <div id="globalSearchOverlay" class="global-search-overlay" hidden>
+            <div class="global-search-backdrop" onclick="closeGlobalSearch()" aria-hidden="true"></div>
+            <div
+                class="global-search-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="globalSearchTitle"
+                onclick="event.stopPropagation()"
+            >
+                <div class="global-search-panel__head">
+                    <span id="globalSearchTitle" class="global-search-panel__title">Search issues</span>
+                    <button type="button" class="global-search-panel__close" onclick="closeGlobalSearch()" aria-label="Close search">&times;</button>
+                </div>
+                <label for="globalSearchInput" class="visually-hidden">Filter issues</label>
+                <input
+                    type="search"
+                    id="globalSearchInput"
+                    class="global-search-input"
+                    placeholder="Filter by key, assignee, summary…"
+                    autocomplete="off"
+                    spellcheck="false"
+                />
+                <ul id="globalSearchResults" class="global-search-results"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+    <script>
+        let uploadedFile = null;
+        let workbookData = null;
+        let sprintIndices = null;
+        /** Full sheet matrix after a successful Proceed (used for ticket detail + nav). */
+        let analysisSheetData = null;
+        /** Snapshot from last Proceed: totals, issue mix, threshold (for Reports / Analytics). */
+        let lastRunStats = null;
+        /** Issue key → spillover reason (Spillover dashboard); exported to SpillOverReason. */
+        let spilloverReasonByKey = {};
+        /** Issue key → spillover category (dropdown); exported on SpillOver sheet only. */
+        let spilloverCategoryByKey = {};
+        /** Issue key → PROD (Yes/No) for Bug sheet last columns. */
+        let bugProdByKey = {};
+        /** Issue key → RCA text for Bug sheet. */
+        let bugRcaByKey = {};
+        /** Populated when the search palette opens; lists unique issue keys for filtering. */
+        let globalSearchRows = null;
+
+        const SPILLOVER_CATEGORY_OPTIONS = [
+            'Defect Blocker',
+            'Dependency',
+            'Scope Creep',
+            'Owner Specific',
+            'Estimation',
+            'Carryover Work'
+        ];
+
+        function updateNavForView(view) {
+            var navUpload = document.getElementById('navUpload');
+            var navDashboard = document.getElementById('navDashboard');
+            var navSpillover = document.getElementById('navSpillover');
+            var navBug = document.getElementById('navBug');
+            var navReports = document.getElementById('navReports');
+            var navAnalytics = document.getElementById('navAnalytics');
+            var navExport = document.getElementById('navExport');
+            if (navUpload) {
+                navUpload.classList.toggle('sidebar__link--active', view === 'setup');
+            }
+            if (navDashboard) {
+                navDashboard.classList.toggle(
+                    'sidebar__link--active',
+                    view === 'dashboard' || view === 'ticket'
+                );
+            }
+            if (navSpillover) {
+                navSpillover.classList.toggle('sidebar__link--active', view === 'spillover');
+            }
+            if (navBug) {
+                navBug.classList.toggle('sidebar__link--active', view === 'bug');
+            }
+            if (navReports) {
+                navReports.classList.toggle('sidebar__link--active', view === 'reports');
+            }
+            if (navAnalytics) {
+                navAnalytics.classList.toggle('sidebar__link--active', view === 'analytics');
+            }
+            if (navExport) {
+                navExport.classList.toggle('sidebar__link--active', view === 'export');
+            }
+        }
+
+        /**
+         * @param {'setup'|'dashboard'|'spillover'|'bug'|'reports'|'analytics'|'export'|'ticket'} view
+         */
+        function setMainView(view) {
+            var setup = document.getElementById('setupPhase');
+            var dash = document.getElementById('dashboardPhase');
+            var spill = document.getElementById('spilloverPhase');
+            var bug = document.getElementById('bugPhase');
+            var reports = document.getElementById('reportsPhase');
+            var analytics = document.getElementById('analyticsPhase');
+            var exportsPh = document.getElementById('exportsPhase');
+            var ticket = document.getElementById('ticketDetailPhase');
+            if (setup) setup.hidden = view !== 'setup';
+            if (dash) dash.hidden = view !== 'dashboard';
+            if (spill) spill.hidden = view !== 'spillover';
+            if (bug) bug.hidden = view !== 'bug';
+            if (reports) reports.hidden = view !== 'reports';
+            if (analytics) analytics.hidden = view !== 'analytics';
+            if (exportsPh) exportsPh.hidden = view !== 'export';
+            if (ticket) ticket.hidden = view !== 'ticket';
+            updateNavForView(view);
+            scrollToDashboardTop();
+        }
+
+        function setPhase(showDashboard) {
+            setMainView(showDashboard ? 'dashboard' : 'setup');
+        }
+
+        function navGoSetup(ev) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            setMainView('setup');
+        }
+
+        function navGoDashboard(ev) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            if (!analysisSheetData || analysisSheetData.length < 2) {
+                showError('Run Proceed from Upload & configure first to open the dashboard.');
+                return;
+            }
+            setMainView('dashboard');
+        }
+
+        function navGoSpilloverSection(ev) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            if (!analysisSheetData || analysisSheetData.length < 2) {
+                showError('Run Proceed from Upload & configure first.');
+                return;
+            }
+            setMainView('spillover');
+        }
+
+        function navGoBugSection(ev) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            if (!analysisSheetData || analysisSheetData.length < 2) {
+                showError('Run Proceed from Upload & configure first.');
+                return;
+            }
+            setMainView('bug');
+        }
+
+        function navGoReports(ev) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            if (!analysisSheetData || analysisSheetData.length < 2) {
+                showError('Run Proceed from Upload & configure first.');
+                return;
+            }
+            renderReportsDashboard();
+            setMainView('reports');
+        }
+
+        function navGoAnalytics(ev) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            if (!analysisSheetData || analysisSheetData.length < 2) {
+                showError('Run Proceed from Upload & configure first.');
+                return;
+            }
+            renderAnalyticsDashboard();
+            setMainView('analytics');
+        }
+
+        function navExportExcel(ev) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            if (!workbookData || !sprintIndices) {
+                showError('Upload a workbook on Setup first.');
+                return;
+            }
+            if (!analysisSheetData || analysisSheetData.length < 2) {
+                showError('Run Proceed first so export columns and row counts can be calculated.');
+                return;
+            }
+            renderExportPreviewDashboard();
+            setMainView('export');
+        }
+
+        function openTicketDetail(issueKey) {
+            if (!analysisSheetData || analysisSheetData.length < 2) {
+                showError('No analyzed sheet data. Run Proceed after uploading.');
+                return;
+            }
+            var headers = analysisSheetData[0];
+            var kIdx = findIssueKeyColumnIndex(headers);
+            if (kIdx < 0) {
+                showError('Could not find an issue key column in the sheet.');
+                return;
+            }
+            var target = String(issueKey).trim();
+            var row = null;
+            for (var i = 1; i < analysisSheetData.length; i++) {
+                var cell = analysisSheetData[i][kIdx];
+                var v = cell == null ? '' : String(cell).trim();
+                if (v === target || v.toLowerCase() === target.toLowerCase()) {
+                    row = analysisSheetData[i];
+                    break;
+                }
+            }
+            if (!row) {
+                showError('That issue was not found in the loaded spreadsheet.');
+                return;
+            }
+            var maxCol = Math.max(headers.length, row.length);
+            var html = '<table class="ticket-detail-table">';
+            for (var c = 0; c < maxCol; c++) {
+                var h = headers[c];
+                var label = h == null || String(h).trim() === '' ? 'Column ' + (c + 1) : String(h);
+                var val = row[c];
+                var display;
+                if (val === undefined || val === null) {
+                    display = '—';
+                } else if (val === '') {
+                    display = '—';
+                } else {
+                    display = String(val);
+                }
+                html += '<tr><th>' + escapeHtml(label) + '</th><td>' + escapeHtml(display) + '</td></tr>';
+            }
+            html += '</table>';
+            var wrap = document.getElementById('ticketDetailTableWrap');
+            if (wrap) wrap.innerHTML = html;
+            var titleEl = document.getElementById('ticketDetailTitle');
+            if (titleEl) titleEl.textContent = target;
+            setMainView('ticket');
+        }
+
+        function escapeHtml(s) {
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function findColumnByNames(headerRow, names) {
+            if (!headerRow) return -1;
+            var lowered = names.map(function (n) {
+                return n.toLowerCase();
+            });
+            for (var j = 0; j < headerRow.length; j++) {
+                var h = headerRow[j];
+                if (h == null || h === '') continue;
+                var t = String(h).trim().toLowerCase();
+                if (lowered.indexOf(t) !== -1) return j;
+            }
+            return -1;
+        }
+
+        function findIssueKeyColumnIndex(headerRow) {
+            return findColumnByNames(headerRow, [
+                'issue key',
+                'key',
+                'issue id',
+                'jira key'
+            ]);
+        }
+
+        function findAssigneeColumnIndex(headerRow) {
+            return findColumnByNames(headerRow, ['assignee']);
+        }
+
+        function buildGlobalSearchIndex() {
+            var out = [];
+            if (!analysisSheetData || analysisSheetData.length < 2) return out;
+            var headers = analysisSheetData[0];
+            var kIdx = findIssueKeyColumnIndex(headers);
+            var aIdx = findAssigneeColumnIndex(headers);
+            var sIdx = findColumnByNames(headers, ['summary', 'issue summary', 'title']);
+            if (kIdx < 0) return out;
+            var seen = {};
+            for (var i = 1; i < analysisSheetData.length; i++) {
+                var row = analysisSheetData[i];
+                var keyCell = row[kIdx];
+                var key = keyCell == null ? '' : String(keyCell).trim();
+                if (!key || seen[key]) continue;
+                seen[key] = true;
+                var assignee =
+                    aIdx >= 0 && row[aIdx] != null ? String(row[aIdx]).trim() : '';
+                var summary =
+                    sIdx >= 0 && row[sIdx] != null ? String(row[sIdx]).trim() : '';
+                var hay = (key + ' ' + assignee + ' ' + summary).toLowerCase();
+                out.push({ key: key, assignee: assignee, summary: summary, hay: hay });
+            }
+            return out;
+        }
+
+        function openGlobalSearch(ev) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            var overlay = document.getElementById('globalSearchOverlay');
+            if (!overlay) return;
+            globalSearchRows = buildGlobalSearchIndex();
+            overlay.hidden = false;
+            var inp = document.getElementById('globalSearchInput');
+            if (inp) {
+                inp.value = '';
+                inp.focus();
+            }
+            renderGlobalSearchResults('');
+        }
+
+        function closeGlobalSearch() {
+            var overlay = document.getElementById('globalSearchOverlay');
+            if (overlay) overlay.hidden = true;
+            globalSearchRows = null;
+            var inp = document.getElementById('globalSearchInput');
+            if (inp) inp.value = '';
+        }
+
+        function renderGlobalSearchResults(q) {
+            var ul = document.getElementById('globalSearchResults');
+            if (!ul) return;
+            var query = (q || '').trim().toLowerCase();
+            if (!globalSearchRows || !globalSearchRows.length) {
+                ul.innerHTML =
+                    '<li class="global-search__empty">Run <strong>Proceed</strong> after upload to search issue keys, assignees, and summaries.</li>';
+                return;
+            }
+            var matches = [];
+            var i;
+            if (!query) {
+                matches = globalSearchRows.slice(0, 25);
+            } else {
+                for (i = 0; i < globalSearchRows.length; i++) {
+                    var it = globalSearchRows[i];
+                    if (it.hay.indexOf(query) !== -1) matches.push(it);
+                    if (matches.length >= 50) break;
+                }
+            }
+            if (!matches.length) {
+                ul.innerHTML = '<li class="global-search__empty">No matches.</li>';
+                return;
+            }
+            var html = '';
+            for (i = 0; i < matches.length; i++) {
+                var item = matches[i];
+                var sk = item.summary;
+                if (sk.length > 100) sk = sk.slice(0, 97) + '\u2026';
+                html +=
+                    '<li><button type="button" class="global-search__hit" data-issue-key="' +
+                    escapeHtml(item.key) +
+                    '">' +
+                    '<span class="global-search__key">' +
+                    escapeHtml(item.key) +
+                    '</span>' +
+                    '<span class="global-search__meta">' +
+                    escapeHtml(item.assignee || '\u2014') +
+                    '</span>';
+                if (sk) {
+                    html += '<span class="global-search__sum">' + escapeHtml(sk) + '</span>';
+                }
+                html += '</button></li>';
+            }
+            ul.innerHTML = html;
+        }
+
+        function renderAssigneesPlaceholder(msg) {
+            var container = document.getElementById('assigneesList');
+            if (!container) return;
+            container.innerHTML = '<p class="assignees-empty">' + msg + '</p>';
+        }
+
+        function renderSpilloverDashboardPlaceholder(msg) {
+            var container = document.getElementById('spilloverDashboardList');
+            if (!container) return;
+            container.innerHTML = '<p class="preview-hint spillover-dash-placeholder">' + msg + '</p>';
+        }
+
+        function renderBugDashboardPlaceholder(msg) {
+            var container = document.getElementById('bugDashboardList');
+            if (!container) return;
+            container.innerHTML = '<p class="preview-hint spillover-dash-placeholder">' + msg + '</p>';
+        }
+
+        function renderSpilloverDashboardList(allData, threshold) {
+            var container = document.getElementById('spilloverDashboardList');
+            if (!container) return;
+            var headerRow = allData[0];
+            var aIdx = findAssigneeColumnIndex(headerRow);
+            var kIdx = findIssueKeyColumnIndex(headerRow);
+            if (kIdx < 0) {
+                container.innerHTML =
+                    '<p class="preview-hint">No <strong>Issue key</strong> column found in the sheet.</p>';
+                return;
+            }
+            var rows = [];
+            var seen = {};
+            var assigneeCounts = {};
+            for (var i = 1; i < allData.length; i++) {
+                var row = allData[i];
+                if (!hasSpilloverRaw(row, threshold)) continue;
+                var keyCell = row[kIdx];
+                var keyStr = keyCell == null ? '' : String(keyCell).trim();
+                if (!keyStr || seen[keyStr]) continue;
+                seen[keyStr] = true;
+                var name;
+                if (aIdx < 0) {
+                    name = '—';
+                } else {
+                    var rawName = row[aIdx];
+                    name =
+                        rawName == null || String(rawName).trim() === ''
+                            ? 'Unassigned'
+                            : String(rawName).trim();
+                }
+                assigneeCounts[name] = (assigneeCounts[name] || 0) + 1;
+                rows.push({ name: name, key: keyStr });
+            }
+            rows.sort(function (a, b) {
+                var c = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+                if (c !== 0) return c;
+                return a.key.localeCompare(b.key, undefined, { numeric: true });
+            });
+            if (!rows.length) {
+                container.innerHTML =
+                    '<p class="preview-hint">No spillover rows for this threshold — no sprint cell equals that value.</p>';
+                return;
+            }
+            var warn =
+                aIdx < 0
+                    ? '<p class="preview-hint" style="margin-bottom:0.85rem">No <strong>Assignee</strong> column in the export — the assignee column shows a dash.</p>'
+                    : '';
+            var summaryEntries = [];
+            for (var nm in assigneeCounts) {
+                if (Object.prototype.hasOwnProperty.call(assigneeCounts, nm)) {
+                    summaryEntries.push({ name: nm, count: assigneeCounts[nm] });
+                }
+            }
+            summaryEntries.sort(function (a, b) {
+                if (b.count !== a.count) return b.count - a.count;
+                return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+            });
+            var summaryHtml =
+                '<div class="spillover-summary">' +
+                '<h3 class="spillover-summary__heading">Summary by assignee</h3>' +
+                '<div class="spillover-table-wrap">' +
+                '<table class="spillover-table spillover-table--summary">' +
+                '<thead><tr><th scope="col">Assignee</th><th scope="col">Spillover count</th></tr></thead><tbody>';
+            for (var s = 0; s < summaryEntries.length; s++) {
+                summaryHtml +=
+                    '<tr><td class="spillover-table__name">' +
+                    escapeHtml(summaryEntries[s].name) +
+                    '</td><td class="spillover-table__count">' +
+                    String(summaryEntries[s].count) +
+                    '</td></tr>';
+            }
+            summaryHtml += '</tbody></table></div></div>';
+            var html =
+                warn +
+                summaryHtml +
+                '<h3 class="spillover-detail__heading">All tickets</h3>' +
+                '<div class="spillover-table-wrap"><table class="spillover-table">' +
+                '<thead><tr><th scope="col">Assignee</th><th scope="col">Issue key</th><th scope="col">Spillover reason</th><th scope="col">Spillover category</th></tr></thead><tbody>';
+            for (var r = 0; r < rows.length; r++) {
+                var k = rows[r].key;
+                var keyAttr = escapeHtml(k);
+                var reasonVal =
+                    spilloverReasonByKey[k] !== undefined && spilloverReasonByKey[k] !== null
+                        ? spilloverReasonByKey[k]
+                        : '';
+                var catVal =
+                    spilloverCategoryByKey[k] !== undefined && spilloverCategoryByKey[k] !== null
+                        ? spilloverCategoryByKey[k]
+                        : '';
+                var catHtml =
+                    '<td class="spillover-table__category-cell">' +
+                    '<select class="spillover-category-select" data-issue-key="' +
+                    keyAttr +
+                    '" title="Spillover category (SpillOver sheet only)">' +
+                    '<option value="">Select category\u2026</option>';
+                for (var ci = 0; ci < SPILLOVER_CATEGORY_OPTIONS.length; ci++) {
+                    var optLabel = SPILLOVER_CATEGORY_OPTIONS[ci];
+                    var selected = catVal === optLabel ? ' selected' : '';
+                    catHtml +=
+                        '<option value="' +
+                        escapeHtml(optLabel) +
+                        '"' +
+                        selected +
+                        '>' +
+                        escapeHtml(optLabel) +
+                        '</option>';
+                }
+                catHtml += '</select></td>';
+                html +=
+                    '<tr class="spillover-table__row" tabindex="0" data-issue-key="' +
+                    keyAttr +
+                    '" title="Open full ticket details (click outside reason/category fields)">' +
+                    '<td class="spillover-table__name">' +
+                    escapeHtml(rows[r].name) +
+                    '</td>' +
+                    '<td class="spillover-table__key-cell">' +
+                    '<span class="spillover-table__tick" aria-hidden="true">\u2713</span>' +
+                    '<span class="spillover-table__key">' +
+                    escapeHtml(k) +
+                    '</span></td>' +
+                    '<td class="spillover-table__reason-cell">' +
+                    '<input type="text" class="spillover-reason-input" data-issue-key="' +
+                    keyAttr +
+                    '" value="' +
+                    escapeHtml(String(reasonVal)) +
+                    '" placeholder="Enter spillover reason\u2026" autocomplete="off" title="Spillover reason (included in Export)" />' +
+                    '</td>' +
+                    catHtml +
+                    '</tr>';
+            }
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        function renderBugDashboardList(allData) {
+            var container = document.getElementById('bugDashboardList');
+            if (!container) return;
+            var headerRow = allData[0];
+            var issueTypeIdx = findIssueTypeColumnIndex(headerRow);
+            var kIdx = findIssueKeyColumnIndex(headerRow);
+            var aIdx = findAssigneeColumnIndex(headerRow);
+
+            if (issueTypeIdx < 0) {
+                container.innerHTML =
+                    '<p class="preview-hint">No <strong>Issue Type</strong> column found — cannot list bugs for PROD/RCA.</p>';
+                return;
+            }
+            if (kIdx < 0) {
+                container.innerHTML =
+                    '<p class="preview-hint">No <strong>Issue key</strong> column found in the sheet.</p>';
+                return;
+            }
+
+            var rows = [];
+            var seen = {};
+            for (var i = 1; i < allData.length; i++) {
+                var row = allData[i];
+                if (!isBugRow(row, issueTypeIdx)) continue;
+                var keyCell = row[kIdx];
+                var keyStr = keyCell == null ? '' : String(keyCell).trim();
+                if (!keyStr || seen[keyStr]) continue;
+                seen[keyStr] = true;
+                var name;
+                if (aIdx < 0) {
+                    name = '\u2014';
+                } else {
+                    var rawName = row[aIdx];
+                    name =
+                        rawName == null || String(rawName).trim() === ''
+                            ? 'Unassigned'
+                            : String(rawName).trim();
+                }
+                rows.push({ name: name, key: keyStr });
+            }
+            rows.sort(function (a, b) {
+                var c = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+                if (c !== 0) return c;
+                return a.key.localeCompare(b.key, undefined, { numeric: true });
+            });
+
+            if (!rows.length) {
+                container.innerHTML =
+                    '<p class="preview-hint">No bug rows (Issue Type = Bug) in this export.</p>';
+                return;
+            }
+
+            var warn =
+                aIdx < 0
+                    ? '<p class="preview-hint" style="margin-bottom:0.85rem">No <strong>Assignee</strong> column — assignee shows a dash.</p>'
+                    : '';
+
+            var html =
+                warn +
+                '<div class="spillover-table-wrap"><table class="spillover-table">' +
+                '<thead><tr><th scope="col">Assignee</th><th scope="col">Issue key</th><th scope="col">PROD</th><th scope="col">RCA (Root Cause Analysis)</th></tr></thead><tbody>';
+
+            for (var r = 0; r < rows.length; r++) {
+                var k = rows[r].key;
+                var keyAttr = escapeHtml(k);
+                var prodVal =
+                    bugProdByKey[k] !== undefined && bugProdByKey[k] !== null ? bugProdByKey[k] : '';
+                var rcaVal =
+                    bugRcaByKey[k] !== undefined && bugRcaByKey[k] !== null ? bugRcaByKey[k] : '';
+                var yesSel = prodVal === 'Yes' ? ' selected' : '';
+                var noSel = prodVal === 'No' ? ' selected' : '';
+                html +=
+                    '<tr class="spillover-table__row bug-table__row" tabindex="0" data-issue-key="' +
+                    keyAttr +
+                    '" title="Open full ticket details">' +
+                    '<td class="spillover-table__name">' +
+                    escapeHtml(rows[r].name) +
+                    '</td>' +
+                    '<td class="spillover-table__key-cell">' +
+                    '<span class="spillover-table__tick" aria-hidden="true">\u2713</span>' +
+                    '<span class="spillover-table__key">' +
+                    escapeHtml(k) +
+                    '</span></td>' +
+                    '<td class="spillover-table__category-cell">' +
+                    '<select class="bug-prod-select" data-issue-key="' +
+                    keyAttr +
+                    '" title="PROD — exported on Bug sheet">' +
+                    '<option value="">Select\u2026</option>' +
+                    '<option value="Yes"' +
+                    yesSel +
+                    '>Yes</option>' +
+                    '<option value="No"' +
+                    noSel +
+                    '>No</option>' +
+                    '</select></td>' +
+                    '<td class="spillover-table__rca-cell">' +
+                    '<input type="text" class="spillover-reason-input bug-rca-input" data-issue-key="' +
+                    keyAttr +
+                    '" value="' +
+                    escapeHtml(String(rcaVal)) +
+                    '" placeholder="Root cause analysis\u2026" autocomplete="off" title="RCA — exported on Bug sheet" />' +
+                    '</td>' +
+                    '</tr>';
+            }
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        function renderAssigneesList(allData) {
+            var container = document.getElementById('assigneesList');
+            if (!container) return;
+            var headerRow = allData[0];
+            var aIdx = findAssigneeColumnIndex(headerRow);
+            var kIdx = findIssueKeyColumnIndex(headerRow);
+            if (aIdx < 0 || kIdx < 0) {
+                container.innerHTML =
+                    '<p class="assignees-empty">Could not find <strong>Assignee</strong> and/or <strong>Issue key</strong> columns in the header row.</p>';
+                return;
+            }
+            var rows = [];
+            var seen = {};
+            for (var i = 1; i < allData.length; i++) {
+                var row = allData[i];
+                var rawName = row[aIdx];
+                var name =
+                    rawName == null || String(rawName).trim() === ''
+                        ? 'Unassigned'
+                        : String(rawName).trim();
+                var keyCell = row[kIdx];
+                var keyStr = keyCell == null ? '' : String(keyCell).trim();
+                if (!keyStr) continue;
+                var sig = name + '\0' + keyStr;
+                if (seen[sig]) continue;
+                seen[sig] = true;
+                rows.push({ name: name, key: keyStr });
+            }
+            rows.sort(function (a, b) {
+                var c = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+                if (c !== 0) return c;
+                return a.key.localeCompare(b.key, undefined, { numeric: true });
+            });
+            if (!rows.length) {
+                container.innerHTML = '<p class="assignees-empty">No issue keys found.</p>';
+                return;
+            }
+            var html = '';
+            for (var r = 0; r < rows.length; r++) {
+                var keyAttr = escapeHtml(rows[r].key);
+                html +=
+                    '<div class="assignee-issue assignee-issue--clickable" role="button" tabindex="0" data-issue-key="' +
+                    keyAttr +
+                    '" title="Open ticket details from spreadsheet">' +
+                    '<span class="assignee-issue__name">' +
+                    escapeHtml(rows[r].name) +
+                    '</span>' +
+                    '<span class="assignee-issue__key">' +
+                    escapeHtml(rows[r].key) +
+                    '</span></div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function setAssigneesPanelOpen(open) {
+            var btn = document.getElementById('assigneesToggle');
+            var panel = document.getElementById('assigneesPanel');
+            if (!btn || !panel) return;
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            panel.hidden = !open;
+            btn.classList.toggle('sidebar__folder--open', open);
+        }
+
+        (function initSpilloverDashboardClicks() {
+            var list = document.getElementById('spilloverDashboardList');
+            if (!list) return;
+            list.addEventListener('input', function (e) {
+                var inp = e.target.closest('.spillover-reason-input');
+                if (!inp) return;
+                var key = inp.getAttribute('data-issue-key');
+                if (key) spilloverReasonByKey[key] = inp.value;
+            });
+            list.addEventListener('change', function (e) {
+                var sel = e.target.closest('.spillover-category-select');
+                if (!sel) return;
+                var key = sel.getAttribute('data-issue-key');
+                if (key) spilloverCategoryByKey[key] = sel.value;
+            });
+            list.addEventListener('click', function (e) {
+                if (e.target.closest('.spillover-reason-input')) return;
+                if (e.target.closest('.spillover-category-select')) return;
+                if (e.target.closest('.spillover-table__reason-cell')) return;
+                if (e.target.closest('.spillover-table__category-cell')) return;
+                var row = e.target.closest('.spillover-table__row');
+                if (!row) return;
+                var key = row.getAttribute('data-issue-key');
+                if (key) openTicketDetail(key);
+            });
+            list.addEventListener('keydown', function (e) {
+                if (e.target.closest('.spillover-reason-input')) return;
+                if (e.target.closest('.spillover-category-select')) return;
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                var row = e.target.closest('.spillover-table__row');
+                if (!row) return;
+                e.preventDefault();
+                var key = row.getAttribute('data-issue-key');
+                if (key) openTicketDetail(key);
+            });
+        })();
+
+        (function initBugDashboardClicks() {
+            var list = document.getElementById('bugDashboardList');
+            if (!list) return;
+            list.addEventListener('input', function (e) {
+                var inp = e.target.closest('.bug-rca-input');
+                if (!inp) return;
+                var key = inp.getAttribute('data-issue-key');
+                if (key) bugRcaByKey[key] = inp.value;
+            });
+            list.addEventListener('change', function (e) {
+                var sel = e.target.closest('.bug-prod-select');
+                if (!sel) return;
+                var key = sel.getAttribute('data-issue-key');
+                if (key) bugProdByKey[key] = sel.value;
+            });
+            list.addEventListener('click', function (e) {
+                if (e.target.closest('.bug-rca-input')) return;
+                if (e.target.closest('.bug-prod-select')) return;
+                if (e.target.closest('.spillover-table__rca-cell')) return;
+                if (e.target.closest('.spillover-table__category-cell')) return;
+                var row = e.target.closest('.bug-table__row');
+                if (!row) return;
+                var key = row.getAttribute('data-issue-key');
+                if (key) openTicketDetail(key);
+            });
+            list.addEventListener('keydown', function (e) {
+                if (e.target.closest('.bug-rca-input')) return;
+                if (e.target.closest('.bug-prod-select')) return;
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                var row = e.target.closest('.bug-table__row');
+                if (!row) return;
+                e.preventDefault();
+                var key = row.getAttribute('data-issue-key');
+                if (key) openTicketDetail(key);
+            });
+        })();
+
+        (function initAssigneesToggle() {
+            var btn = document.getElementById('assigneesToggle');
+            if (!btn) return;
+            btn.addEventListener('click', function () {
+                var open = btn.getAttribute('aria-expanded') === 'true';
+                setAssigneesPanelOpen(!open);
+            });
+        })();
+
+        (function initAssigneesRowClicks() {
+            var list = document.getElementById('assigneesList');
+            if (!list) return;
+            list.addEventListener('click', function (e) {
+                var el = e.target.closest('.assignee-issue--clickable');
+                if (!el) return;
+                var key = el.getAttribute('data-issue-key');
+                if (key) openTicketDetail(key);
+            });
+            list.addEventListener('keydown', function (e) {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                var el = e.target.closest('.assignee-issue--clickable');
+                if (!el) return;
+                e.preventDefault();
+                var key = el.getAttribute('data-issue-key');
+                if (key) openTicketDetail(key);
+            });
+        })();
+
+        (function initGlobalSearch() {
+            var inp = document.getElementById('globalSearchInput');
+            if (inp) {
+                inp.addEventListener('input', function () {
+                    renderGlobalSearchResults(inp.value);
+                });
+            }
+            var res = document.getElementById('globalSearchResults');
+            if (res) {
+                res.addEventListener('click', function (e) {
+                    var btn = e.target.closest('.global-search__hit');
+                    if (!btn) return;
+                    var key = btn.getAttribute('data-issue-key');
+                    if (key) {
+                        closeGlobalSearch();
+                        openTicketDetail(key);
+                    }
+                });
+            }
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    var o = document.getElementById('globalSearchOverlay');
+                    if (o && !o.hidden) {
+                        e.preventDefault();
+                        closeGlobalSearch();
+                    }
+                    return;
+                }
+                if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+                var t = e.target;
+                var tag = t && t.tagName;
+                var inEditable =
+                    tag === 'INPUT' ||
+                    tag === 'TEXTAREA' ||
+                    tag === 'SELECT' ||
+                    (t && t.isContentEditable);
+                if (inEditable) return;
+                e.preventDefault();
+                openGlobalSearch();
+            });
+        })();
+
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+
+        function scrollToDashboardTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            var main = document.querySelector('.main');
+            if (main) main.scrollTop = 0;
+        }
+
+        function renderChartPlaceholder() {
+            var svg = document.getElementById('analysisChartSvg');
+            if (!svg) return;
+            svg.innerHTML =
+                '<line x1="24" y1="168" x2="376" y2="168" stroke="#2a2a2a" stroke-width="1"/>' +
+                '<text x="200" y="95" text-anchor="middle" fill="#6b6b6b" font-size="11" font-family="Inter,sans-serif">Run Proceed to plot cumulative spillover</text>';
+            var note = document.getElementById('chartNote');
+            if (note) {
+                note.innerHTML = 'Visual snapshot · Run <strong style="color:var(--text-muted)">Proceed</strong> to chart spillover across rows.';
+            }
+        }
+
+        /**
+         * Cumulative spillover count across data rows (live chart from your sheet).
+         */
+        function renderAnalysisOverviewChart(allData, threshold, spillYes, spillNo, totalRows) {
+            var svg = document.getElementById('analysisChartSvg');
+            var note = document.getElementById('chartNote');
+            if (!svg) return;
+
+            var W = 400;
+            var H = 200;
+            var padL = 32;
+            var padR = 16;
+            var padT = 20;
+            var padB = 36;
+            var plotW = W - padL - padR;
+            var plotH = H - padT - padB;
+            var baseY = padT + plotH;
+            var gid = 'cg_' + String(Date.now());
+
+            var cum = 0;
+            var pts = [];
+            var maxRows = Math.max(totalRows, 1);
+
+            for (var i = 1; i < allData.length; i++) {
+                if (hasSpilloverRaw(allData[i], threshold)) cum++;
+                var t = maxRows <= 1 ? 0 : (i - 1) / (maxRows - 1);
+                var x = padL + t * plotW;
+                var maxCum = spillYes;
+                var y = maxCum > 0 ? padT + plotH * (1 - cum / maxCum) : baseY;
+                pts.push({ x: x, y: y, cum: cum });
+            }
+
+            if (!pts.length) {
+                svg.innerHTML =
+                    '<text x="200" y="100" text-anchor="middle" fill="#6b6b6b" font-size="11" font-family="Inter,sans-serif">No data rows to plot</text>';
+                if (note) {
+                    note.textContent = 'No rows found in sheet.';
+                }
+                return;
+            }
+
+            var lineD = '';
+            for (var p = 0; p < pts.length; p++) {
+                lineD += (p === 0 ? 'M' : 'L') + pts[p].x.toFixed(1) + ',' + pts[p].y.toFixed(1) + ' ';
+            }
+
+            var areaD = lineD;
+            if (pts.length) {
+                areaD +=
+                    'L' +
+                    pts[pts.length - 1].x.toFixed(1) +
+                    ',' +
+                    baseY +
+                    ' L' +
+                    pts[0].x.toFixed(1) +
+                    ',' +
+                    baseY +
+                    ' Z';
+            }
+
+            svg.innerHTML =
+                '<defs>' +
+                '<linearGradient id="' +
+                gid +
+                '" x1="0" y1="0" x2="0" y2="1">' +
+                '<stop offset="0%" stop-color="rgba(59,130,246,0.45)"/>' +
+                '<stop offset="100%" stop-color="rgba(59,130,246,0)"/>' +
+                '</linearGradient></defs>' +
+                '<line x1="' +
+                padL +
+                '" y1="' +
+                baseY +
+                '" x2="' +
+                (W - padR) +
+                '" y2="' +
+                baseY +
+                '" stroke="#2a2a2a" stroke-width="1"/>' +
+                '<path d="' +
+                areaD.trim() +
+                '" fill="url(#' +
+                gid +
+                ')"/>' +
+                '<path d="' +
+                lineD.trim() +
+                '" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '<text x="' +
+                padL +
+                '" y="' +
+                (H - 10) +
+                '" fill="#6b6b6b" font-size="10" font-family="Inter,sans-serif">Rows →</text>' +
+                '<text x="' +
+                (padL + 4) +
+                '" y="' +
+                (padT + 10) +
+                '" fill="#a0a0a0" font-size="10" font-family="Inter,sans-serif">Cumulative SpillOver Yes</text>';
+
+            if (note) {
+                note.innerHTML =
+                    '<strong style="color:var(--text)">' +
+                    spillYes +
+                    '</strong> yes · <strong style="color:var(--text)">' +
+                    spillNo +
+                    '</strong> no · <strong style="color:var(--text)">' +
+                    totalRows +
+                    '</strong> rows · Line shows cumulative SpillOver Yes (any Sprint column equals your threshold).';
+            }
+        }
+
+        function countMapNonEmpty(obj) {
+            var n = 0;
+            for (var k in obj) {
+                if (!Object.prototype.hasOwnProperty.call(obj, k)) continue;
+                if (String(obj[k] || '').trim() !== '') n++;
+            }
+            return n;
+        }
+
+        function computeTopAssignees(allData) {
+            var out = [];
+            if (!allData || allData.length < 2) return out;
+            var headerRow = allData[0];
+            var aIdx = findAssigneeColumnIndex(headerRow);
+            var kIdx = findIssueKeyColumnIndex(headerRow);
+            if (aIdx < 0 || kIdx < 0) return out;
+            var counts = {};
+            for (var i = 1; i < allData.length; i++) {
+                var row = allData[i];
+                var keyCell = row[kIdx];
+                if (keyCell == null || String(keyCell).trim() === '') continue;
+                var rawName = row[aIdx];
+                var name =
+                    rawName == null || String(rawName).trim() === ''
+                        ? 'Unassigned'
+                        : String(rawName).trim();
+                counts[name] = (counts[name] || 0) + 1;
+            }
+            for (var nm in counts) {
+                if (Object.prototype.hasOwnProperty.call(counts, nm)) {
+                    out.push({ name: nm, count: counts[nm] });
+                }
+            }
+            out.sort(function (a, b) {
+                return b.count - a.count;
+            });
+            return out.slice(0, 8);
+        }
+
+        function anaBarRow(label, value, max, variant) {
+            var w = max > 0 ? Math.round((100 * value) / max) : 0;
+            var fillClass = 'ana-bar-line__fill';
+            if (variant === 'yes') fillClass += ' ana-bar-line__fill--yes';
+            else if (variant === 'no') fillClass += ' ana-bar-line__fill--no';
+            return (
+                '<div class="ana-bar-line">' +
+                '<span class="ana-bar-line__label">' +
+                escapeHtml(label) +
+                '</span>' +
+                '<div class="ana-bar-line__track"><div class="' +
+                fillClass +
+                '" style="width:' +
+                w +
+                '%"></div></div>' +
+                '<span class="ana-bar-line__num">' +
+                value +
+                '</span></div>'
+            );
+        }
+
+        function buildColumnChips(headers, newKeyMap) {
+            var html = '';
+            var i;
+            for (i = 0; i < headers.length; i++) {
+                var name = headers[i];
+                var isNew = newKeyMap && newKeyMap[name];
+                html +=
+                    '<span class="col-chip' +
+                    (isNew ? ' col-chip--new' : '') +
+                    '">' +
+                    escapeHtml(String(name)) +
+                    '</span>';
+            }
+            return html;
+        }
+
+        /**
+         * Same column layout and row counts as processExcel(), without writing a file.
+         */
+        function computeExportPlan() {
+            var threshold = document.getElementById('compareThreshold').value.trim();
+            var baseVersion = document.getElementById('baseVersion').value.trim();
+            if (!workbookData || !sprintIndices || !baseVersion || !threshold || isNaN(parseFloat(threshold))) {
+                return null;
+            }
+            try {
+                var sheet = workbookData.Sheets[workbookData.SheetNames[0]];
+                var allData = XLSX.utils.sheet_to_row_object_array(sheet, { header: 1 });
+                var headerRow = allData[0];
+                var headerNames = buildHeaderNames(headerRow);
+                var issueTypeIdx = findIssueTypeColumnIndex(headerRow);
+                var kIdxExport = findIssueKeyColumnIndex(headerRow);
+                var keyColName = kIdxExport >= 0 ? headerNames[kIdxExport] : null;
+
+                var intakeHeader = headerNames.slice();
+                if (!intakeHeader.includes('SpillOver')) intakeHeader.push('SpillOver');
+
+                var spillHeader = intakeHeader.slice();
+                if (!spillHeader.includes('SpillOverReason')) spillHeader.push('SpillOverReason');
+                if (!spillHeader.includes('SpillOverCategory')) spillHeader.push('SpillOverCategory');
+
+                var bugHeader = intakeHeader.slice();
+                if (!bugHeader.includes('PROD')) bugHeader.push('PROD');
+                if (!bugHeader.includes('RCA')) bugHeader.push('RCA');
+
+                var originalSet = {};
+                var hi;
+                for (hi = 0; hi < headerNames.length; hi++) {
+                    originalSet[headerNames[hi]] = true;
+                }
+                var intakeNewKeys = {};
+                for (hi = 0; hi < intakeHeader.length; hi++) {
+                    var hInt = intakeHeader[hi];
+                    if (!originalSet[hInt]) intakeNewKeys[hInt] = true;
+                }
+                var spillNewKeys = {};
+                for (hi = 0; hi < spillHeader.length; hi++) {
+                    var hSp = spillHeader[hi];
+                    if (!originalSet[hSp]) spillNewKeys[hSp] = true;
+                }
+                var bugNewKeys = {};
+                for (hi = 0; hi < bugHeader.length; hi++) {
+                    var hB = bugHeader[hi];
+                    if (!originalSet[hB]) bugNewKeys[hB] = true;
+                }
+
+                var totalRows = 0;
+                var spillYes = 0;
+                var bugCount = 0;
+                var PREVIEW_CAP = 12;
+                var intakePreview = [];
+                var spillPreview = [];
+                var bugPreview = [];
+                var i;
+                var raw;
+                var rowObj;
+                var spillRaw;
+                var ik;
+                for (i = 1; i < allData.length; i++) {
+                    raw = allData[i];
+                    totalRows++;
+                    spillRaw = hasSpilloverRaw(raw, threshold);
+                    if (spillRaw) spillYes++;
+                    if (isBugRow(raw, issueTypeIdx)) bugCount++;
+
+                    rowObj = rowToNamedObject(raw, headerNames);
+                    rowObj['SpillOver'] = spillRaw ? 'Yes' : 'No';
+                    if (intakePreview.length < PREVIEW_CAP) {
+                        intakePreview.push(rowObj);
+                    }
+                    if (spillRaw && spillPreview.length < PREVIEW_CAP) {
+                        ik = '';
+                        if (keyColName && rowObj[keyColName] != null && String(rowObj[keyColName]).trim() !== '') {
+                            ik = String(rowObj[keyColName]).trim();
+                        }
+                        spillPreview.push(
+                            Object.assign({}, rowObj, {
+                                SpillOverReason: ik ? String(spilloverReasonByKey[ik] || '') : '',
+                                SpillOverCategory: ik ? String(spilloverCategoryByKey[ik] || '') : ''
+                            })
+                        );
+                    }
+                    if (isBugRow(raw, issueTypeIdx) && bugPreview.length < PREVIEW_CAP) {
+                        ik = '';
+                        if (keyColName && rowObj[keyColName] != null && String(rowObj[keyColName]).trim() !== '') {
+                            ik = String(rowObj[keyColName]).trim();
+                        }
+                        bugPreview.push(
+                            Object.assign({}, rowObj, {
+                                PROD: ik ? String(bugProdByKey[ik] || '') : '',
+                                RCA: ik ? String(bugRcaByKey[ik] || '') : ''
+                            })
+                        );
+                    }
+                }
+
+                var nextVersion = (parseFloat(baseVersion) + 0.1).toFixed(1);
+                return {
+                    baseVersion: baseVersion,
+                    threshold: threshold,
+                    fileName: 'SFMC_SprintVelocity_' + baseVersion + '&' + nextVersion + '.xlsx',
+                    headerNames: headerNames,
+                    ticketIntakeHeader: intakeHeader,
+                    spillHeader: spillHeader,
+                    bugHeader: bugHeader,
+                    intakeNewKeys: intakeNewKeys,
+                    spillNewKeys: spillNewKeys,
+                    bugNewKeys: bugNewKeys,
+                    totalRows: totalRows,
+                    spillYes: spillYes,
+                    bugCount: bugCount,
+                    issueTypeIdx: issueTypeIdx,
+                    sprintColumnCount: sprintIndices.length,
+                    hasIssueKey: kIdxExport >= 0,
+                    intakePreview: intakePreview,
+                    spillPreview: spillPreview,
+                    bugPreview: bugPreview,
+                    previewCap: PREVIEW_CAP
+                };
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function renderExportPreviewHtmlTable(headers, rows, maxShown, sheetNote) {
+            if (!headers || !headers.length) {
+                return '<p class="preview-hint">No columns.</p>';
+            }
+            var thead = '<thead><tr>';
+            var hi;
+            for (hi = 0; hi < headers.length; hi++) {
+                thead += '<th scope="col">' + escapeHtml(String(headers[hi])) + '</th>';
+            }
+            thead += '</tr></thead>';
+            var tbody = '<tbody>';
+            if (!rows || !rows.length) {
+                tbody +=
+                    '<tr><td colspan="' +
+                    headers.length +
+                    '" class="export-preview-empty">' +
+                    (sheetNote ||
+                        'No rows match this sheet\u2014Excel may still include a placeholder row.') +
+                    '</td></tr>';
+            } else {
+                var ri;
+                var ci;
+                for (ri = 0; ri < rows.length; ri++) {
+                    tbody += '<tr>';
+                    var row = rows[ri];
+                    for (ci = 0; ci < headers.length; ci++) {
+                        var key = headers[ci];
+                        var v = row[key];
+                        var disp = v === undefined || v === null ? '' : String(v);
+                        if (disp.length > 140) disp = disp.slice(0, 137) + '\u2026';
+                        tbody += '<td title="' + escapeHtml(disp) + '">' + escapeHtml(disp) + '</td>';
+                    }
+                    tbody += '</tr>';
+                }
+            }
+            tbody += '</tbody>';
+            var capNote =
+                rows && rows.length
+                    ? 'Preview: first ' + rows.length + ' of export rows (max ' + maxShown + ').'
+                    : '';
+            return (
+                '<div class="export-preview-wrap">' +
+                (capNote ? '<p class="export-preview-caption">' + capNote + '</p>' : '') +
+                '<div class="export-preview-scroll">' +
+                '<table class="export-preview-table">' +
+                thead +
+                tbody +
+                '</table></div></div>'
+            );
+        }
+
+        function renderExportPreviewDashboard() {
+            var root = document.getElementById('exportPreviewBody');
+            if (!root) return;
+            var plan = computeExportPlan();
+            if (!plan) {
+                root.innerHTML =
+                    '<div class="panel-dark"><div class="panel-dark__body"><p class="preview-hint">Enter <strong>base version</strong> and <strong>threshold</strong> on Upload, run <strong>Proceed</strong>, then open <strong>Exports</strong> again.</p></div></div>';
+                return;
+            }
+            var bv = plan.baseVersion;
+            var intCols = buildColumnChips(plan.ticketIntakeHeader, plan.intakeNewKeys);
+            var spillCols = buildColumnChips(plan.spillHeader, plan.spillNewKeys);
+            var bugCols = buildColumnChips(plan.bugHeader, plan.bugNewKeys);
+            var bugMeta =
+                plan.issueTypeIdx < 0
+                    ? 'No Issue Type column — Bug sheet uses one placeholder row.'
+                    : plan.bugCount === 0
+                      ? 'No bug rows — Excel gets one placeholder row.'
+                      : String(plan.bugCount) + ' bug rows from Issue Type = Bug.';
+
+            var tblIntake = renderExportPreviewHtmlTable(
+                plan.ticketIntakeHeader,
+                plan.intakePreview,
+                plan.previewCap,
+                ''
+            );
+            var tblSpill = renderExportPreviewHtmlTable(
+                plan.spillHeader,
+                plan.spillPreview,
+                plan.previewCap,
+                plan.spillYes === 0 ? 'No SpillOver = Yes rows in source data.' : ''
+            );
+            var tblBug = renderExportPreviewHtmlTable(
+                plan.bugHeader,
+                plan.bugPreview,
+                plan.previewCap,
+                plan.bugCount === 0 ? 'No bugs to preview — file uses one empty placeholder row.' : ''
+            );
+
+            root.innerHTML =
+                '<div class="panel-dark export-hero-filename"><div class="panel-dark__body">' +
+                '<p style="margin:0 0 0.35rem;font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">Download file name</p>' +
+                '<code class="kbd">' +
+                escapeHtml(plan.fileName) +
+                '</code>' +
+                '<p class="ana-donut-hint" style="margin-top:0.65rem;margin-bottom:0">TicketIntake &amp; SpillOver include <strong>SpillOver</strong> (and reasons/categories on SpillOver sheet only). <strong>PROD</strong> and <strong>RCA</strong> are only on the Bug sheet. Amber chips = app-added columns.</p>' +
+                '</div></div>' +
+                '<div class="export-sheet-grid" style="margin-top:1rem">' +
+                '<div class="export-sheet-card">' +
+                '<div class="export-sheet-card__head">' +
+                '<h3 class="export-sheet-card__title">TicketIntake_' +
+                escapeHtml(bv) +
+                '</h3>' +
+                '<span class="export-sheet-card__meta">' +
+                plan.totalRows +
+                ' rows · ' +
+                plan.ticketIntakeHeader.length +
+                ' columns</span></div>' +
+                '<div class="export-sheet-card__cols">' +
+                intCols +
+                '</div>' +
+                tblIntake +
+                '</div>' +
+                '<div class="export-sheet-card">' +
+                '<div class="export-sheet-card__head">' +
+                '<h3 class="export-sheet-card__title">SpillOver_' +
+                escapeHtml(bv) +
+                '</h3>' +
+                '<span class="export-sheet-card__meta">' +
+                plan.spillYes +
+                ' rows · ' +
+                plan.spillHeader.length +
+                ' columns</span></div>' +
+                '<div class="export-sheet-card__cols">' +
+                spillCols +
+                '</div>' +
+                tblSpill +
+                '</div>' +
+                '<div class="export-sheet-card">' +
+                '<div class="export-sheet-card__head">' +
+                '<h3 class="export-sheet-card__title">Bug_' +
+                escapeHtml(bv) +
+                '</h3>' +
+                '<span class="export-sheet-card__meta">' +
+                (plan.bugCount > 0 ? plan.bugCount + ' rows' : '1 placeholder') +
+                ' · ' +
+                plan.bugHeader.length +
+                ' columns</span></div>' +
+                '<p class="ana-donut-hint" style="margin:0 0 0.5rem 1rem">' +
+                escapeHtml(bugMeta) +
+                '</p>' +
+                '<div class="export-sheet-card__cols">' +
+                bugCols +
+                '</div>' +
+                tblBug +
+                '</div>' +
+                '</div>';
+        }
+
+        function countUniqueAssignees(allData) {
+            if (!allData || allData.length < 2) return '\u2014';
+            var headerRow = allData[0];
+            var aIdx = findAssigneeColumnIndex(headerRow);
+            var kIdx = findIssueKeyColumnIndex(headerRow);
+            if (aIdx < 0 || kIdx < 0) return '\u2014';
+            var seen = {};
+            var n = 0;
+            var i;
+            for (i = 1; i < allData.length; i++) {
+                var row = allData[i];
+                if (row[kIdx] == null || String(row[kIdx]).trim() === '') continue;
+                var rawName = row[aIdx];
+                var nm =
+                    rawName == null || String(rawName).trim() === ''
+                        ? 'Unassigned'
+                        : String(rawName).trim();
+                if (!seen[nm]) {
+                    seen[nm] = true;
+                    n++;
+                }
+            }
+            return n;
+        }
+
+        function renderReportsDashboard() {
+            var root = document.getElementById('reportsDashboardBody');
+            if (!root) return;
+            if (!analysisSheetData || analysisSheetData.length < 2 || !lastRunStats) {
+                root.innerHTML =
+                    '<div class="panel-dark"><div class="panel-dark__body"><p class="preview-hint">Run <strong>Proceed</strong> after upload to see report details.</p></div></div>';
+                return;
+            }
+            var st = lastRunStats;
+            var bv = document.getElementById('baseVersion').value.trim();
+            var th = document.getElementById('compareThreshold').value.trim();
+            var nextV =
+                bv && !isNaN(parseFloat(bv)) ? (parseFloat(bv) + 0.1).toFixed(1) : '\u2014';
+            var fn =
+                bv && !isNaN(parseFloat(bv))
+                    ? 'SFMC_SprintVelocity_' + bv + '&' + nextV + '.xlsx'
+                    : '\u2014';
+            var plan = computeExportPlan();
+            var sr = countMapNonEmpty(spilloverReasonByKey);
+            var sc = countMapNonEmpty(spilloverCategoryByKey);
+            var bugsProd = countMapNonEmpty(bugProdByKey);
+            var bugsRca = countMapNonEmpty(bugRcaByKey);
+            var bugsTotal = st.typeCounts ? st.typeCounts.bug : 0;
+            var spillTotal = st.spillYes;
+            var total = st.totalRows;
+            var pctSpill = total > 0 ? Math.round((100 * st.spillYes) / total) : 0;
+            var tc = st.typeCounts || {};
+            var storyEpic = (tc.story || 0) + (tc.epic || 0);
+            var fileEl = document.getElementById('fileName');
+            var loadedFileLabel =
+                fileEl && fileEl.textContent && fileEl.textContent.trim()
+                    ? escapeHtml(fileEl.textContent.trim())
+                    : '\u2014';
+
+            var hdr = analysisSheetData[0];
+            var dqIssueKey = findIssueKeyColumnIndex(hdr) >= 0;
+            var dqAssignee = findAssigneeColumnIndex(hdr) >= 0;
+            var dqIssueType = findIssueTypeColumnIndex(hdr) >= 0;
+            var dqSummary =
+                findColumnByNames(hdr, ['summary', 'issue summary', 'title']) >= 0;
+
+            function pill(ok, label) {
+                return (
+                    '<span class="report-pill ' +
+                    (ok ? 'report-pill--ok' : 'report-pill--warn') +
+                    '">' +
+                    (ok ? '\u2713 ' : '! ') +
+                    label +
+                    '</span>'
+                );
+            }
+
+            var uniqAssignees = countUniqueAssignees(analysisSheetData);
+
+            var intakeRows = plan ? plan.totalRows : total;
+            var spillRows = plan ? plan.spillYes : st.spillYes;
+            var bugRowsDisplay = plan ? plan.bugCount : bugsTotal;
+
+            root.innerHTML =
+                '<div class="report-stat-grid">' +
+                '<div class="report-stat-card"><div class="report-stat-card__label">Issues (rows)</div><div class="report-stat-card__value">' +
+                total +
+                '</div><div class="report-stat-card__sub">Data rows in sheet</div></div>' +
+                '<div class="report-stat-card"><div class="report-stat-card__label">SpillOver Yes</div><div class="report-stat-card__value">' +
+                st.spillYes +
+                '</div><div class="report-stat-card__sub">' +
+                pctSpill +
+                '% · Sprint = ' +
+                escapeHtml(th || '\u2014') +
+                '</div></div>' +
+                '<div class="report-stat-card"><div class="report-stat-card__label">SpillOver No</div><div class="report-stat-card__value">' +
+                st.spillNo +
+                '</div></div>' +
+                '<div class="report-stat-card"><div class="report-stat-card__label">Bugs</div><div class="report-stat-card__value">' +
+                (tc.bug != null ? tc.bug : '\u2014') +
+                '</div></div>' +
+                '<div class="report-stat-card"><div class="report-stat-card__label">Sprint cols</div><div class="report-stat-card__value">' +
+                sprintIndices.length +
+                '</div><div class="report-stat-card__sub">Compared to threshold</div></div>' +
+                '<div class="report-stat-card"><div class="report-stat-card__label">Assignees</div><div class="report-stat-card__value">' +
+                uniqAssignees +
+                '</div><div class="report-stat-card__sub">Unique names</div></div>' +
+                '</div>' +
+
+                '<div class="dash-row">' +
+                '<div class="panel-dark"><div class="panel-dark__head"><h2>Source file</h2></div><div class="panel-dark__body">' +
+                '<table class="report-mini-table">' +
+                '<tr><th scope="row">Loaded workbook</th><td>' +
+                loadedFileLabel +
+                '</td></tr>' +
+                '<tr><th scope="row">Columns in export</th><td>' +
+                hdr.length +
+                ' source · +' +
+                (plan ? plan.ticketIntakeHeader.length - plan.headerNames.length : 1) +
+                ' enriched on TicketIntake (SpillOver)</td></tr>' +
+                '<tr><th scope="row">Stories + Epics</th><td>' +
+                storyEpic +
+                '</td></tr>' +
+                '</table></div></div>' +
+                '<div class="panel-dark"><div class="panel-dark__head"><h2>Column detection</h2></div><div class="panel-dark__body">' +
+                '<p style="margin:0 0 0.65rem;display:flex;flex-wrap:wrap;gap:0.35rem">' +
+                pill(dqIssueKey, 'Issue key') +
+                pill(dqAssignee, 'Assignee') +
+                pill(dqIssueType, 'Issue Type') +
+                pill(dqSummary, 'Summary') +
+                '</p>' +
+                '<p class="ana-donut-hint" style="margin:0">\u2713 = header matched for dashboards & export keys.</p>' +
+                '</div></div></div>' +
+
+                '<div class="dash-row">' +
+                '<div class="panel-dark"><div class="panel-dark__head"><h2>Export packages</h2></div><div class="panel-dark__body">' +
+                '<table class="report-table">' +
+                '<thead><tr><th scope="col">Sheet</th><th scope="col">Rows</th><th scope="col">Notes</th></tr></thead><tbody>' +
+                '<tr><td><strong>TicketIntake_' +
+                escapeHtml(bv || '?') +
+                '</strong></td><td>' +
+                intakeRows +
+                '</td><td>All rows + SpillOver column only</td></tr>' +
+                '<tr><td><strong>SpillOver_' +
+                escapeHtml(bv || '?') +
+                '</strong></td><td>' +
+                spillRows +
+                '</td><td>Subset · SpillOverReason &amp; SpillOverCategory</td></tr>' +
+                '<tr><td><strong>Bug_' +
+                escapeHtml(bv || '?') +
+                '</strong></td><td>' +
+                (bugRowsDisplay > 0 ? bugRowsDisplay : '1*') +
+                '</td><td>Bug rows only; PROD &amp; RCA on this sheet; * if no bugs</td></tr>' +
+                '</tbody></table>' +
+                '<p class="ana-donut-hint">* Excel uses one placeholder row when Issue Type has no bugs.</p>' +
+                '</div></div>' +
+                '<div class="panel-dark"><div class="panel-dark__head"><h2>Parameters</h2></div><div class="panel-dark__body">' +
+                '<dl class="report-kv">' +
+                '<dt>Base version</dt><dd>' +
+                escapeHtml(bv || '\u2014') +
+                '</dd>' +
+                '<dt>Sprint threshold</dt><dd>' +
+                escapeHtml(th || '\u2014') +
+                '</dd>' +
+                '<dt>Output filename</dt><dd><code class="kbd">' +
+                escapeHtml(fn) +
+                '</code></dd>' +
+                '</dl></div></div></div>' +
+
+                '<div class="panel-dark"><div class="panel-dark__head"><h2>Issue mix</h2></div><div class="panel-dark__body">' +
+                '<table class="report-mini-table">' +
+                '<tr><th scope="row">Bug</th><td>' +
+                (tc.bug != null ? tc.bug : '\u2014') +
+                '</td></tr>' +
+                '<tr><th scope="row">Epic</th><td>' +
+                (tc.epic != null ? tc.epic : '\u2014') +
+                '</td></tr>' +
+                '<tr><th scope="row">Story</th><td>' +
+                (tc.story != null ? tc.story : '\u2014') +
+                '</td></tr>' +
+                '<tr><th scope="row">Sub-task</th><td>' +
+                (tc.subtask != null ? tc.subtask : '\u2014') +
+                '</td></tr>' +
+                '<tr><th scope="row">Task</th><td>' +
+                (tc.task != null ? tc.task : '\u2014') +
+                '</td></tr>' +
+                '<tr><th scope="row">Other + empty type</th><td>' +
+                ((tc.other || 0) + (tc.empty || 0)) +
+                '</td></tr>' +
+                '</table></div></div>' +
+
+                '<div class="panel-dark"><div class="panel-dark__head"><h2>Enrichment progress</h2></div><div class="panel-dark__body">' +
+                '<dl class="report-kv">' +
+                '<dt>Spillover reasons</dt><dd>' +
+                sr +
+                ' / ' +
+                spillTotal +
+                ' spillover rows</dd>' +
+                '<dt>Spillover categories</dt><dd>' +
+                sc +
+                ' / ' +
+                spillTotal +
+                '</dd>' +
+                '<dt>Bugs with PROD</dt><dd>' +
+                bugsProd +
+                ' / ' +
+                bugsTotal +
+                '</dd>' +
+                '<dt>Bugs with RCA</dt><dd>' +
+                bugsRca +
+                ' / ' +
+                bugsTotal +
+                '</dd>' +
+                '</dl>' +
+                '<p class="ana-donut-hint">Finish on <strong>Spillover</strong> &amp; <strong>Bugs</strong>; review columns on <strong>Exports</strong>.</p>' +
+                '</div></div>';
+        }
+
+        function renderAnalyticsDashboard() {
+            var root = document.getElementById('analyticsDashboardBody');
+            if (!root) return;
+            if (!analysisSheetData || analysisSheetData.length < 2 || !lastRunStats) {
+                root.innerHTML =
+                    '<div class="panel-dark"><div class="panel-dark__body"><p class="preview-hint">Run <strong>Proceed</strong> to load analytics.</p></div></div>';
+                return;
+            }
+            var st = lastRunStats;
+            var total = st.totalRows;
+            var yes = st.spillYes;
+            var no = st.spillNo;
+            var html =
+                '<div class="dash-row">' +
+                '<div class="panel-dark"><div class="panel-dark__head"><h2>Spillover split</h2></div><div class="panel-dark__body">' +
+                '<div class="ana-bars">' +
+                anaBarRow('SpillOver Yes', yes, total, 'yes') +
+                anaBarRow('SpillOver No', no, total, 'no') +
+                '</div>' +
+                '<p class="ana-donut-hint">Rows where any Sprint equals threshold <strong>' +
+                escapeHtml(String(st.threshold)) +
+                '</strong></p>' +
+                '</div></div>';
+
+            html +=
+                '<div class="panel-dark"><div class="panel-dark__head"><h2>Issue types</h2></div><div class="panel-dark__body">';
+            if (st.issueTypeIdx < 0) {
+                html +=
+                    '<p class="preview-hint">No <strong>Issue Type</strong> column in this export.</p>';
+            } else {
+                var tc = st.typeCounts;
+                var types = [
+                    ['Bug', tc.bug],
+                    ['Epic', tc.epic],
+                    ['Story', tc.story],
+                    ['Sub-task', tc.subtask],
+                    ['Task', tc.task],
+                    ['Other', tc.other]
+                ];
+                var maxT = 0;
+                var ti;
+                for (ti = 0; ti < types.length; ti++) maxT = Math.max(maxT, types[ti][1]);
+                if (maxT < 1) maxT = 1;
+                html += '<div class="ana-bars">';
+                for (ti = 0; ti < types.length; ti++) {
+                    html += anaBarRow(types[ti][0], types[ti][1], maxT, '');
+                }
+                html += '</div>';
+            }
+            html += '</div></div></div>';
+
+            var topA = computeTopAssignees(analysisSheetData);
+            html +=
+                '<div class="panel-dark"><div class="panel-dark__head"><h2>Top assignees</h2></div><div class="panel-dark__body">';
+            if (!topA.length) {
+                html +=
+                    '<p class="preview-hint">Need <strong>Assignee</strong> and <strong>Issue key</strong> columns to rank workload.</p>';
+            } else {
+                var maxA = topA[0].count;
+                html += '<div class="ana-bars">';
+                var ai;
+                for (ai = 0; ai < topA.length; ai++) {
+                    html += anaBarRow(topA[ai].name, topA[ai].count, maxA, '');
+                }
+                html += '</div>';
+            }
+            html += '</div></div>';
+            root.innerHTML = html;
+        }
+
+        function clearDashboardMetrics() {
+            ['dashMetricYes', 'dashMetricNo', 'dashMetricTotal', 'dashMetricBugs'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.textContent = '\u2014';
+            });
+        }
+
+        function setDashboardMetrics(yes, no, total, bugs, hasIssueColumn) {
+            document.getElementById('dashMetricYes').textContent = yes;
+            document.getElementById('dashMetricNo').textContent = no;
+            document.getElementById('dashMetricTotal').textContent = total;
+            document.getElementById('dashMetricBugs').textContent = hasIssueColumn ? bugs : '\u2014';
+        }
+
+        function setPreviewPlaceholder(mode) {
+            const el = document.getElementById('previewCount');
+            el.className = 'preview-box preview-box--empty';
+            if (mode === 'welcome') {
+                el.innerHTML = '<p class="preview-hint">Upload a workbook in <strong>Data source</strong> to configure analysis.</p>';
+            } else {
+                el.innerHTML = '<p class="preview-hint">Enter base version and threshold, then click <strong>Proceed</strong>.</p>';
+            }
+        }
+
+        function categorizeIssueType(raw) {
+            if (raw == null || String(raw).trim() === '') return 'empty';
+            const s = String(raw).trim().toLowerCase().replace(/\s+/g, ' ');
+            if (s === 'bug') return 'bug';
+            if (s === 'epic') return 'epic';
+            if (s === 'story') return 'story';
+            if (s === 'sub-task' || s === 'sub task' || s === 'subtask') return 'subtask';
+            if (s === 'task') return 'task';
+            return 'other';
+        }
+
+        function buildIssueTypeTable(counts) {
+            const rows = [
+                ['Bug', counts.bug],
+                ['Epic', counts.epic],
+                ['Story', counts.story],
+                ['Sub-task', counts.subtask],
+                ['Task', counts.task]
+            ];
+            var body = '';
+            for (var r = 0; r < rows.length; r++) {
+                body +=
+                    '<tr><td>' +
+                    rows[r][0] +
+                    '</td><td class="issue-type-table__num">' +
+                    rows[r][1] +
+                    '</td></tr>';
+            }
+            if (counts.other > 0) {
+                body +=
+                    '<tr class="issue-type-table__sub"><td>Other</td><td class="issue-type-table__num">' +
+                    counts.other +
+                    '</td></tr>';
+            }
+            if (counts.empty > 0) {
+                body +=
+                    '<tr class="issue-type-table__sub"><td>Unspecified</td><td class="issue-type-table__num">' +
+                    counts.empty +
+                    '</td></tr>';
+            }
+            return (
+                '<div class="issue-type-table-wrap"><table class="issue-type-table">' +
+                '<thead><tr><th scope="col">Issue type</th><th scope="col">Count</th></tr></thead><tbody>' +
+                body +
+                '</tbody></table></div>'
+            );
+        }
+
+        function handleFileUpload(e) {
+            uploadedFile = e.target.files[0];
+            if (!uploadedFile) return;
+
+            document.getElementById('fileName').textContent = uploadedFile.name;
+            document.getElementById('statusMsg').classList.remove('show');
+            document.getElementById('errorMsg').classList.remove('show');
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const data = new Uint8Array(event.target.result);
+                    workbookData = XLSX.read(data, { type: 'array' });
+
+                    const sheet = workbookData.Sheets[workbookData.SheetNames[0]];
+                    sprintIndices = getSprintColumnsIndices(sheet);
+
+                    document.getElementById('baseVersion').value = '';
+                    document.getElementById('compareThreshold').value = '';
+                    setPreviewPlaceholder('config');
+                    clearDashboardMetrics();
+                    renderChartPlaceholder();
+                    analysisSheetData = null;
+                    lastRunStats = null;
+                    spilloverReasonByKey = {};
+                    spilloverCategoryByKey = {};
+                    bugProdByKey = {};
+                    bugRcaByKey = {};
+                    setPhase(false);
+                    setAssigneesPanelOpen(false);
+                    renderAssigneesPlaceholder('Run <strong>Proceed</strong>, then open <strong>Assignees</strong> for names and issue keys (needs those columns in the export).');
+                    renderSpilloverDashboardPlaceholder('Run <strong>Proceed</strong> to list spillover issue keys here (sprint equals threshold).');
+                    renderBugDashboardPlaceholder('Run <strong>Proceed</strong> to list bugs for PROD and RCA.');
+
+                    document.getElementById('fileDetails').classList.add('show');
+                } catch (err) {
+                    showError('Error reading file: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(uploadedFile);
+        }
+
+        function getSprintColumnsIndices(sheet) {
+            const firstRow = XLSX.utils.sheet_to_row_object_array(sheet, {header: 1})[0];
+            let indices = [];
+
+            for (let i = 5; i < firstRow.length; i++) {
+                if (firstRow[i] === 'Sprint') {
+                    indices.push(i);
+                }
+            }
+            return indices;
+        }
+
+        /** Excel/sheet floats: treat values as equal when within this epsilon (e.g. 14.1 vs 14.1000001). */
+        const SPRINT_THRESHOLD_EPS = 1e-6;
+
+        function sprintCellMatchesThreshold(cellValue, thresholdStr) {
+            const thresholdNum = parseFloat(thresholdStr);
+            if (isNaN(thresholdNum)) return false;
+            if (cellValue === null || cellValue === undefined || cellValue === '') return false;
+            const numValue = parseFloat(cellValue);
+            if (isNaN(numValue)) return false;
+            return Math.abs(numValue - thresholdNum) < SPRINT_THRESHOLD_EPS;
+        }
+
+        function hasSpilloverRaw(rowData, threshold) {
+            for (let idx of sprintIndices) {
+                if (sprintCellMatchesThreshold(rowData[idx], threshold)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function buildHeaderNames(headerRow) {
+            const count = {};
+            const names = [];
+            const len = headerRow ? headerRow.length : 0;
+            for (let j = 0; j < len; j++) {
+                let base = headerRow[j] == null || headerRow[j] === ''
+                    ? `Column_${j + 1}`
+                    : String(headerRow[j]).trim();
+                if (!base) base = `Column_${j + 1}`;
+                const n = (count[base] = (count[base] || 0) + 1);
+                names.push(n === 1 ? base : `${base}_${n}`);
+            }
+            return names;
+        }
+
+        function findIssueTypeColumnIndex(headerRow) {
+            if (!headerRow) return -1;
+            for (let j = 0; j < headerRow.length; j++) {
+                const h = headerRow[j];
+                if (h != null && String(h).trim().toLowerCase() === 'issue type') {
+                    return j;
+                }
+            }
+            return -1;
+        }
+
+        function isBugRow(row, issueTypeIdx) {
+            if (issueTypeIdx < 0 || !row) return false;
+            const v = row[issueTypeIdx];
+            if (v == null || v === '') return false;
+            return String(v).trim().toLowerCase() === 'bug';
+        }
+
+        function rowToNamedObject(row, headerNames) {
+            const o = {};
+            for (let j = 0; j < headerNames.length; j++) {
+                o[headerNames[j]] = row[j] !== undefined && row[j] !== null ? row[j] : '';
+            }
+            return o;
+        }
+
+        function safeSheetName(name) {
+            let s = String(name).replace(/[\[\]:\\/?*]/g, '_');
+            if (s.length > 31) s = s.slice(0, 31);
+            return s;
+        }
+
+        function runProceed() {
+            const threshold = document.getElementById('compareThreshold').value.trim();
+            const baseVersion = document.getElementById('baseVersion').value.trim();
+
+            if (!workbookData || !sprintIndices) {
+                showError('Please upload an Excel file first.');
+                return;
+            }
+            if (!baseVersion) {
+                showError('Please enter a base version.');
+                return;
+            }
+            if (!threshold) {
+                showError('Please enter the compare threshold.');
+                return;
+            }
+            if (isNaN(parseFloat(threshold))) {
+                showError('Compare threshold must be a valid number.');
+                return;
+            }
+
+            try {
+                const sheet = workbookData.Sheets[workbookData.SheetNames[0]];
+                const allData = XLSX.utils.sheet_to_row_object_array(sheet, {header: 1});
+
+                const headerRow = allData[0];
+                const issueTypeIdx = findIssueTypeColumnIndex(headerRow);
+
+                let spilloverCount = 0;
+                let noSpilloverCount = 0;
+                const typeCounts = {
+                    bug: 0,
+                    epic: 0,
+                    story: 0,
+                    subtask: 0,
+                    task: 0,
+                    other: 0,
+                    empty: 0
+                };
+
+                for (let i = 1; i < allData.length; i++) {
+                    const row = allData[i];
+                    if (hasSpilloverRaw(row, threshold)) {
+                        spilloverCount++;
+                    } else {
+                        noSpilloverCount++;
+                    }
+                    if (issueTypeIdx >= 0) {
+                        const cat = categorizeIssueType(row[issueTypeIdx]);
+                        if (cat === 'empty') typeCounts.empty++;
+                        else if (cat === 'bug') typeCounts.bug++;
+                        else if (cat === 'epic') typeCounts.epic++;
+                        else if (cat === 'story') typeCounts.story++;
+                        else if (cat === 'subtask') typeCounts.subtask++;
+                        else if (cat === 'task') typeCounts.task++;
+                        else typeCounts.other++;
+                    }
+                }
+
+                const totalRows = allData.length - 1;
+
+                setDashboardMetrics(
+                    spilloverCount,
+                    noSpilloverCount,
+                    totalRows,
+                    typeCounts.bug,
+                    issueTypeIdx >= 0
+                );
+
+                renderAnalysisOverviewChart(
+                    allData,
+                    threshold,
+                    spilloverCount,
+                    noSpilloverCount,
+                    totalRows
+                );
+
+                let issueSection;
+                if (issueTypeIdx < 0) {
+                    issueSection =
+                        '<div class="metric-section"><h3 class="metric-section__title">Issue type</h3>' +
+                        '<div class="metric-banner metric-banner--warn">No <strong>Issue Type</strong> column found. Include it in your Jira export to see counts by Bug, Epic, Story, Sub-task, and Task.</div></div>';
+                } else {
+                    issueSection =
+                        '<div class="metric-section"><h3 class="metric-section__title">By issue type</h3>' +
+                        buildIssueTypeTable(typeCounts) +
+                        '</div>';
+                }
+
+                const previewEl = document.getElementById('previewCount');
+                previewEl.className = 'preview-box preview-box--dashboard';
+                previewEl.innerHTML = issueSection;
+                document.getElementById('errorMsg').classList.remove('show');
+
+                analysisSheetData = allData.map(function (row) {
+                    return Array.isArray(row) ? row.slice() : row;
+                });
+                renderAssigneesList(allData);
+                renderSpilloverDashboardList(allData, threshold);
+                renderBugDashboardList(allData);
+                lastRunStats = {
+                    totalRows: totalRows,
+                    spillYes: spilloverCount,
+                    spillNo: noSpilloverCount,
+                    typeCounts: {
+                        bug: typeCounts.bug,
+                        epic: typeCounts.epic,
+                        story: typeCounts.story,
+                        subtask: typeCounts.subtask,
+                        task: typeCounts.task,
+                        other: typeCounts.other,
+                        empty: typeCounts.empty
+                    },
+                    issueTypeIdx: issueTypeIdx,
+                    threshold: threshold
+                };
+                renderReportsDashboard();
+                renderAnalyticsDashboard();
+                renderExportPreviewDashboard();
+                setMainView('dashboard');
+
+                let summaryExtra = '';
+                if (issueTypeIdx >= 0) {
+                    summaryExtra =
+                        ' · Bug ' +
+                        typeCounts.bug +
+                        ' · Epic ' +
+                        typeCounts.epic +
+                        ' · Story ' +
+                        typeCounts.story;
+                }
+                showSuccess('Analysis complete.' + summaryExtra + ' Use Export or Download to save.');
+            } catch (err) {
+                showError('Could not analyze file: ' + err.message);
+            }
+        }
+
+        function processExcel() {
+            const threshold = document.getElementById('compareThreshold').value.trim();
+            const baseVersion = document.getElementById('baseVersion').value.trim();
+
+            if (!workbookData || !sprintIndices) {
+                showError('Please upload an Excel file first.');
+                return;
+            }
+            if (!baseVersion) {
+                showError('Please enter a base version');
+                return;
+            }
+            if (!threshold) {
+                showError('Please enter the value to compare (threshold)');
+                return;
+            }
+            if (isNaN(parseFloat(threshold))) {
+                showError('Compare threshold must be a valid number');
+                return;
+            }
+
+            try {
+                const sheet = workbookData.Sheets[workbookData.SheetNames[0]];
+                const allData = XLSX.utils.sheet_to_row_object_array(sheet, {header: 1});
+
+                const headerRow = allData[0];
+                const headerNames = buildHeaderNames(headerRow);
+                const issueTypeIdx = findIssueTypeColumnIndex(headerRow);
+                const kIdxExport = findIssueKeyColumnIndex(headerRow);
+                const keyColName = kIdxExport >= 0 ? headerNames[kIdxExport] : null;
+
+                /** TicketIntake / SpillOver: source columns + SpillOver only. PROD/RCA appear only on Bug sheet. */
+                const intakeHeader = headerNames.slice();
+                if (!intakeHeader.includes('SpillOver')) intakeHeader.push('SpillOver');
+
+                const spillHeader = intakeHeader.slice();
+                for (const t of ['SpillOverReason', 'SpillOverCategory']) {
+                    if (!spillHeader.includes(t)) spillHeader.push(t);
+                }
+
+                const bugSheetHeader = intakeHeader.slice();
+                for (const t of ['PROD', 'RCA']) {
+                    if (!bugSheetHeader.includes(t)) bugSheetHeader.push(t);
+                }
+
+                const newWorkbook = XLSX.utils.book_new();
+
+                const dataWithSpillover = [];
+                const bugRows = [];
+
+                for (let i = 1; i < allData.length; i++) {
+                    const raw = allData[i];
+                    const rowObj = rowToNamedObject(raw, headerNames);
+                    const spill = hasSpilloverRaw(raw, threshold);
+                    rowObj['SpillOver'] = spill ? 'Yes' : 'No';
+                    dataWithSpillover.push(rowObj);
+                    if (isBugRow(raw, issueTypeIdx)) {
+                        let ik = '';
+                        if (keyColName && rowObj[keyColName] != null && String(rowObj[keyColName]).trim() !== '') {
+                            ik = String(rowObj[keyColName]).trim();
+                        }
+                        bugRows.push(
+                            Object.assign({}, rowObj, {
+                                PROD: ik ? String(bugProdByKey[ik] || '') : '',
+                                RCA: ik ? String(bugRcaByKey[ik] || '') : ''
+                            })
+                        );
+                    }
+                }
+
+                const sheet1 = XLSX.utils.json_to_sheet(dataWithSpillover, { header: intakeHeader });
+                XLSX.utils.book_append_sheet(newWorkbook, sheet1, safeSheetName(`TicketIntake_${baseVersion}`));
+
+                const spilloverRows = dataWithSpillover.filter(row => row.SpillOver === 'Yes');
+                const spilloverWithColumns = spilloverRows.map(row => {
+                    let ik = '';
+                    if (keyColName && row[keyColName] != null && String(row[keyColName]).trim() !== '') {
+                        ik = String(row[keyColName]).trim();
+                    }
+                    return {
+                        ...row,
+                        SpillOverReason: ik ? String(spilloverReasonByKey[ik] || '') : '',
+                        SpillOverCategory: ik ? String(spilloverCategoryByKey[ik] || '') : ''
+                    };
+                });
+
+                const sheet2 = XLSX.utils.json_to_sheet(spilloverWithColumns, { header: spillHeader });
+                XLSX.utils.book_append_sheet(newWorkbook, sheet2, safeSheetName(`SpillOver_${baseVersion}`));
+
+                let sheetBug;
+                if (bugRows.length > 0) {
+                    sheetBug = XLSX.utils.json_to_sheet(bugRows, { header: bugSheetHeader });
+                } else {
+                    const placeholder = {};
+                    bugSheetHeader.forEach(h => {
+                        placeholder[h] = '';
+                    });
+                    sheetBug = XLSX.utils.json_to_sheet([placeholder], { header: bugSheetHeader });
+                }
+                XLSX.utils.book_append_sheet(newWorkbook, sheetBug, safeSheetName(`Bug_${baseVersion}`));
+
+                const nextVersion = (parseFloat(baseVersion) + 0.1).toFixed(1);
+                const fileName = `SFMC_SprintVelocity_${baseVersion}&${nextVersion}.xlsx`;
+                XLSX.writeFile(newWorkbook, fileName);
+
+                const bugNote = issueTypeIdx < 0
+                    ? ' | Bug sheet: no Issue Type column (sheet has placeholder row)'
+                    : ` | Bugs: ${bugRows.length}`;
+                showSuccess(`Downloaded: ${fileName} | SpillOver Yes: ${spilloverRows.length} | No: ${dataWithSpillover.length - spilloverRows.length}${bugNote}`);
+            } catch (err) {
+                showError('Error processing file: ' + err.message);
+            }
+        }
+
+        function resetForm() {
+            uploadedFile = null;
+            workbookData = null;
+            sprintIndices = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('baseVersion').value = '';
+            document.getElementById('compareThreshold').value = '';
+            setPreviewPlaceholder('welcome');
+            clearDashboardMetrics();
+            renderChartPlaceholder();
+            analysisSheetData = null;
+            lastRunStats = null;
+            spilloverReasonByKey = {};
+            spilloverCategoryByKey = {};
+            bugProdByKey = {};
+            bugRcaByKey = {};
+            setPhase(false);
+            setAssigneesPanelOpen(false);
+            renderAssigneesPlaceholder('Run <strong>Proceed</strong>, then open <strong>Assignees</strong> for names and issue keys.');
+            renderSpilloverDashboardPlaceholder('Run <strong>Proceed</strong> to list spillover tickets (sprint equals threshold).');
+            renderBugDashboardPlaceholder('Run <strong>Proceed</strong> to list bugs for PROD and RCA.');
+            document.getElementById('fileDetails').classList.remove('show');
+            document.getElementById('statusMsg').classList.remove('show');
+            document.getElementById('errorMsg').classList.remove('show');
+        }
+
+        function showError(msg) {
+            document.getElementById('errorText').textContent = msg;
+            document.getElementById('errorMsg').classList.add('show');
+            document.getElementById('statusMsg').classList.remove('show');
+        }
+
+        function showSuccess(msg) {
+            document.getElementById('statusText').textContent = msg;
+            document.getElementById('statusMsg').classList.add('show');
+            document.getElementById('errorMsg').classList.remove('show');
+        }
+
+        renderChartPlaceholder();
+    </script>
+</body>
+</html>
