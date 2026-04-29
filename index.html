@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sprint Velocity — Dashboard</title>
+    <title>Jira Spillover Analyzer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1673,9 +1673,9 @@
     <div class="app">
         <aside class="sidebar" aria-label="Primary navigation">
             <div class="sidebar__brand">
-                <div class="sidebar__logo" aria-hidden="true">V</div>
+                <div class="sidebar__logo" aria-hidden="true">J</div>
                 <div class="sidebar__brand-text">
-                    <span class="sidebar__title">Sprint<span>Velocity</span></span>
+                    <span class="sidebar__title">Jira Spillover<span>Analyzer</span></span>
                 </div>
                 <button type="button" class="sidebar__brand-toggle" aria-label="Workspace menu" title="Workspace">
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
@@ -3201,7 +3201,7 @@
                 return {
                     baseVersion: baseVersion,
                     threshold: threshold,
-                    fileName: 'SFMC_SprintVelocity_' + baseVersion + '&' + nextVersion + '.xlsx',
+                    fileName: 'SFMC_JiraSpilloverAnalyzer_' + baseVersion + '&' + nextVersion + '.xlsx',
                     headerNames: headerNames,
                     ticketIntakeHeader: intakeHeader,
                     spillHeader: spillHeader,
@@ -3415,7 +3415,7 @@
                 bv && !isNaN(parseFloat(bv)) ? (parseFloat(bv) + 0.1).toFixed(1) : '\u2014';
             var fn =
                 bv && !isNaN(parseFloat(bv))
-                    ? 'SFMC_SprintVelocity_' + bv + '&' + nextV + '.xlsx'
+                    ? 'SFMC_JiraSpilloverAnalyzer_' + bv + '&' + nextV + '.xlsx'
                     : '\u2014';
             var plan = computeExportPlan();
             var sr = countMapNonEmpty(spilloverReasonByKey);
@@ -4096,7 +4096,7 @@
                 XLSX.utils.book_append_sheet(newWorkbook, sheetBug, safeSheetName(`Bug_${baseVersion}`));
 
                 const nextVersion = (parseFloat(baseVersion) + 0.1).toFixed(1);
-                const fileName = `SFMC_SprintVelocity_${baseVersion}&${nextVersion}.xlsx`;
+                const fileName = `SFMC_JiraSpilloverAnalyzer_${baseVersion}&${nextVersion}.xlsx`;
                 XLSX.writeFile(newWorkbook, fileName);
 
                 const bugNote = issueTypeIdx < 0
